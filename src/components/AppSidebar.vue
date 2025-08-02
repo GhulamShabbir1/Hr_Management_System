@@ -25,7 +25,6 @@ export default {
         { label: "Employees", path: "/employees" },
         { label: "Attendance", path: "/attendance" },
         { label: "Payroll", path: "/payroll" },
-        { label: "Performance", path: "/performance" },
         { label: "Announcements", path: "/announcements" },
       ],
     };

@@ -15,12 +15,14 @@ import AppLeaveRequestForm from "@/components/attendance/AppLeaveRequestForm.vue
 import AppAttendanceReport from "@/components/attendance/AppAttendanceReport.vue";
 
 import AppPayrollList from "@/components/payroll/AppPayrollList.vue";
+import AppAnnouncementList from "@/components/announcements/AppAnnouncementList.vue";
 
 Vue.use(Router);
 
 const router = new Router({
   mode: "history",
   routes: [
+    { path: "/", redirect: "/login" },
     { path: "/login", component: AppLogin },
     { path: "/register", component: AppRegister },
     { path: "/dashboard", component: AppDashboard, meta: { requiresAuth: true } },
@@ -30,19 +32,16 @@ const router = new Router({
     { path: "/employees/:id", component: AppEmployeeProfile, meta: { requiresAuth: true, roles: ["Admin", "HR"] } },
 
     // Attendance (accessible by all authenticated users)
-    {
-      path: "/attendance",
-      component: { render: h => h("router-view") },
-      meta: { requiresAuth: true },
-      children: [
-        { path: "check", component: AppAttendanceCheck },
-        { path: "leave", component: AppLeaveRequestForm },
-        { path: "report", component: AppAttendanceReport },
-      ]
-    },
+    { path: "/attendance/check", component: AppAttendanceCheck, meta: { requiresAuth: true } },
+    { path: "/attendance/leave", component: AppLeaveRequestForm, meta: { requiresAuth: true } },
+    { path: "/attendance/report", component: AppAttendanceReport, meta: { requiresAuth: true } },
+    { path: "/attendance", redirect: "/attendance/check", meta: { requiresAuth: true } },
 
     // Payroll
     { path: "/payroll", component: AppPayrollList, meta: { requiresAuth: true, roles: ["HR"] } },
+
+    // Announcements
+    { path: "/announcements", component: AppAnnouncementList, meta: { requiresAuth: true } },
 
     { path: "*", component: AppNotFound }
   ]
@@ -52,8 +51,21 @@ router.beforeEach((to, from, next) => {
   const isAuth = store.getters["auth/isAuthenticated"];
   const role = store.getters["auth/userRole"];
 
-  if (to.meta.requiresAuth && !isAuth) return next("/login");
-  if (to.meta.roles && !to.meta.roles.includes(role)) return next("/dashboard");
+  // Allow access to login and register pages
+  if (to.path === "/login" || to.path === "/register") {
+    return next();
+  }
+
+  // Redirect to login if authentication is required but user is not authenticated
+  if (to.meta.requiresAuth && !isAuth) {
+    return next("/login");
+  }
+
+  // Check role-based access
+  if (to.meta.roles && (!role || !to.meta.roles.includes(role))) {
+    return next("/dashboard");
+  }
+
   next();
 });
 
