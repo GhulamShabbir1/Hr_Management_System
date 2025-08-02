@@ -1,10 +1,10 @@
 <template>
-  <div id="app" class="flex">
+  <div id="app">
     <!-- Sidebar only visible if user is authenticated -->
     <AppSidebar v-if="isAuthenticated" />
 
     <!-- Main content -->
-    <div :class="isAuthenticated ? 'ml-64 w-full' : 'w-full'">
+    <div :class="isAuthenticated ? 'main-content' : ''">
       <router-view />
     </div>
   </div>
@@ -22,10 +22,3 @@ export default {
   }
 };
 </script>
-
-<style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-}
-</style>
