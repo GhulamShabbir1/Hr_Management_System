@@ -1,5 +1,4 @@
 <template>
-<<<<<<< HEAD
   <div class="p-6">
     <h2 class="text-2xl font-bold mb-4">Announcements</h2>
     <button v-if="isAdmin" @click="openCreate()" class="bg-blue-600 text-white px-4 py-2 rounded mb-4">
@@ -77,11 +76,3 @@ export default {
   margin-left: 5px;
 }
 </style>
-=======
-    <div>
-        this is new component 
-    </div>
-</template>
-<script>
-</script>
->>>>>>> a8315294b2aed7849d955a339cf6ebe2cb668636
