@@ -4,7 +4,7 @@
       <div class="row justify-content-center">
         <div class="col-md-6 col-lg-4">
           <div class="card-gradient">
-            <div class="card-gradient-header text-center">
+            <div class="card-gradient-header text-center p-4">
               <h2 class="mb-0">
                 <i class="fas fa-sign-in-alt me-2"></i>
                 Login
@@ -57,19 +57,13 @@
                   <h6 class="text-muted mb-3">Demo Credentials:</h6>
                   <div class="row text-start">
                     <div class="col-12 mb-2">
-                      <small class="d-block">
-                        <strong>Admin:</strong> admin@example.com / admin123
-                      </small>
+                      <small><strong>Admin:</strong> admin@example.com / admin123</small>
                     </div>
                     <div class="col-12 mb-2">
-                      <small class="d-block">
-                        <strong>HR:</strong> hr@example.com / hr123
-                      </small>
+                      <small><strong>HR:</strong> hr@example.com / hr123</small>
                     </div>
                     <div class="col-12">
-                      <small class="d-block">
-                        <strong>Employee:</strong> user@example.com / user123
-                      </small>
+                      <small><strong>Employee:</strong> user@example.com / user123</small>
                     </div>
                   </div>
                 </div>
@@ -92,7 +86,7 @@ export default {
       email: "",
       password: "",
       error: null,
-      isLoading: false,
+      isLoading: false
     };
   },
   methods: {
@@ -113,7 +107,7 @@ export default {
       } finally {
         this.isLoading = false;
       }
-    },
-  },
+    }
+  }
 };
 </script>

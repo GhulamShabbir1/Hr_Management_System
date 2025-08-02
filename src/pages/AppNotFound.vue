@@ -1,34 +1,19 @@
 <template>
-  <div class="not-found">
-    <h1>404 - Page Not Found</h1>
-    <p>The page you are looking for doesn’t exist.</p>
-    <router-link to="/">Go Back Home</router-link>
+  <div class="min-vh-100 d-flex align-items-center justify-content-center">
+    <div class="text-center">
+      <h1 class="display-1 fw-bold text-primary">404</h1>
+      <h2 class="mb-4">Page Not Found</h2>
+      <p class="lead mb-4">The page you're looking for doesn't exist.</p>
+      <router-link to="/dashboard" class="btn btn-gradient-primary">
+        <i class="fas fa-home me-2"></i>
+        Go to Dashboard
+      </router-link>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: "AppNotFound",
+  name: "AppNotFound"
 };
 </script>
-
-<style scoped>
-.not-found {
-  text-align: center;
-  padding: 100px 20px;
-}
-.not-found h1 {
-  font-size: 3rem;
-  margin-bottom: 20px;
-  color: #ff4d4f;
-}
-.not-found p {
-  font-size: 1.2rem;
-  margin-bottom: 20px;
-}
-.not-found a {
-  color: #42b983;
-  text-decoration: none;
-  font-weight: bold;
-}
-</style>

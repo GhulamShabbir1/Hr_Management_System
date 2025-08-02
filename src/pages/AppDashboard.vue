@@ -77,7 +77,7 @@
     <div class="row mb-4">
       <div class="col-12">
         <div class="card-gradient">
-          <div class="card-gradient-header">
+          <div class="card-gradient-header p-3">
             <h4 class="mb-0">
               <i class="fas fa-bolt me-2"></i>
               Quick Actions
@@ -98,36 +98,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Recent Activity -->
-    <div class="row">
-      <div class="col-12">
-        <div class="card-gradient">
-          <div class="card-gradient-header">
-            <h4 class="mb-0">
-              <i class="fas fa-history me-2"></i>
-              Recent Activity
-            </h4>
-          </div>
-          <div class="card-body">
-            <div class="list-group list-group-flush">
-              <div v-for="activity in recentActivity" :key="activity.id" 
-                   class="list-group-item border-0 px-0 py-3">
-                <div class="d-flex align-items-center">
-                  <div class="avatar me-3">
-                    <i class="fas fa-info-circle"></i>
-                  </div>
-                  <div class="flex-grow-1">
-                    <p class="mb-1">{{ activity.message }}</p>
-                    <small class="text-muted">{{ activity.time }}</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -142,20 +112,14 @@ export default {
         totalEmployees: 42,
         presentToday: 38,
         pendingRequests: 5
-      },
-      recentActivity: [
-        { id: 1, message: "New employee John Smith added to the system", time: "2 hours ago" },
-        { id: 2, message: "Leave request approved for Jane Doe", time: "4 hours ago" },
-        { id: 3, message: "Payroll processed for the month", time: "1 day ago" },
-        { id: 4, message: "New announcement posted: Office Policy Update", time: "2 days ago" },
-      ]
+      }
     };
   },
   computed: {
     ...mapGetters("auth", ["userData", "userRole"]),
     user() {
       return this.userData;
-    },
+    }
   },
   methods: {
     getRoleDescription() {
@@ -199,6 +163,6 @@ export default {
         day: 'numeric' 
       });
     }
-  },
+  }
 };
 </script>
