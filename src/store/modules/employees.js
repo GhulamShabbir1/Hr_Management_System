@@ -1,50 +1,52 @@
 // src/store/modules/employees.js
-import employeeServices from '@/services/employeeServices';
-
-
-const state = {
-  employees: []
-};
-
-const mutations = {
-  SET_EMPLOYEES(state, employees) {
-    state.employees = employees;
+export default {
+  namespaced: true,
+  state: {
+    employees: [
+      { id: 1, name: "Ali Khan", email: "ali@example.com", role: "Developer", department: "Engineering", status: "active" },
+      { id: 2, name: "Sara Ahmed", email: "sara@example.com", role: "Designer", department: "Creative", status: "active" }
+    ]
   },
-  ADD_EMPLOYEE(state, employee) {
-    state.employees.push(employee);
+  mutations: {
+    SET_EMPLOYEES(state, employees) {
+      state.employees = employees;
+    },
+    ADD_EMPLOYEE(state, employee) {
+      state.employees.push(employee);
+    },
+    UPDATE_EMPLOYEE(state, updatedEmployee) {
+      const index = state.employees.findIndex(e => e.id === updatedEmployee.id);
+      if (index !== -1) state.employees.splice(index, 1, updatedEmployee);
+    },
+    TOGGLE_EMPLOYEE_STATUS(state, id) {
+      const employee = state.employees.find(e => e.id === id);
+      if (employee) employee.status = employee.status === "active" ? "inactive" : "active";
+    }
   },
-  UPDATE_EMPLOYEE(state, updatedEmployee) {
-    const index = state.employees.findIndex(e => e.id === updatedEmployee.id);
-    if (index !== -1) state.employees.splice(index, 1, updatedEmployee);
+  actions: {
+    fetchEmployees({ commit }) {
+      // Simulate API call (you can replace with real API later)
+      const employees = [
+        { id: 1, name: "Ali Khan", email: "ali@example.com", role: "Developer", department: "Engineering", status: "active" },
+        { id: 2, name: "Sara Ahmed", email: "sara@example.com", role: "Designer", department: "Creative", status: "active" }
+      ];
+      commit("SET_EMPLOYEES", employees);
+      return employees;
+    },
+    addEmployee({ commit }, employee) {
+      commit("ADD_EMPLOYEE", { ...employee, id: Date.now(), status: "active" });
+    },
+    updateEmployee({ commit }, employee) {
+      commit("UPDATE_EMPLOYEE", employee);
+    },
+    toggleEmployeeStatus({ commit }, id) {
+      commit("TOGGLE_EMPLOYEE_STATUS", id);
+    }
   },
-  TOGGLE_STATUS(state, id) {
-    const employee = state.employees.find(e => e.id === id);
-    if (employee) employee.active = !employee.active;
+  getters: {
+    employees: state => state.employees,              // <-- Added alias to fix `employees/employees` getter issue
+    allEmployees: state => state.employees,
+    activeEmployees: state => state.employees.filter(e => e.status === "active"),
+    getByDepartment: state => dept => state.employees.filter(e => e.department === dept)
   }
 };
-
-const actions = {
-  async fetchEmployees({ commit }) {
-    const employees = await employeeServices.getAll();
-    commit("SET_EMPLOYEES", employees);
-  },
-  async addEmployee({ commit }, employee) {
-    const newEmployee = await employeeServices.add(employee);
-    commit("ADD_EMPLOYEE", newEmployee);
-  },
-  async updateEmployee({ commit }, { id, data }) {
-    const updated = await employeeServices.update(id, data);
-    commit("UPDATE_EMPLOYEE", updated);
-  },
-  async toggleStatus({ commit }, id) {
-    await employeeServices.toggleStatus(id);
-    commit("TOGGLE_STATUS", id);
-  }
-};
-
-const getters = {
-  employees: state => state.employees,
-  getEmployeeById: state => id => state.employees.find(e => e.id === parseInt(id))
-};
-
-export default { namespaced: true, state, mutations, actions, getters };

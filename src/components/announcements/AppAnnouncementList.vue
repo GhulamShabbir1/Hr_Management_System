@@ -1,25 +1,49 @@
 <template>
-  <div class="p-6">
-    <h2 class="text-2xl font-bold mb-4">Announcements</h2>
-    <button v-if="isAdmin" @click="openCreate()" class="bg-blue-600 text-white px-4 py-2 rounded mb-4">
-      Create Announcement
+  <div class="container-fluid py-4 animate-fade-in">
+    <h2 class="h2 font-weight-bold mb-4 text-primary">Announcements</h2>
+    <button 
+      v-if="isAdmin" 
+      @click="openCreate()" 
+      class="btn btn-primary px-4 py-2 mb-4 animate-pulse"
+    >
+      <i class="fas fa-plus-circle mr-2"></i>Create Announcement
     </button>
 
-    <ul>
-      <li v-for="announcement in announcements" :key="announcement.id" class="border p-3 mb-2 rounded">
-        <div class="flex justify-between items-center">
-          <h3 class="font-semibold">{{ announcement.title }}</h3>
-          <span class="text-sm text-gray-500">{{ formatDate(announcement.date) }}</span>
-        </div>
-        <p>{{ announcement.content }}</p>
-        <div class="mt-1 text-sm text-gray-600">
-          <i v-if="announcement.emailSent" class="fas fa-envelope text-green-600" title="Email sent"></i>
-          <i v-else class="fas fa-envelope text-gray-300" title="Email not sent"></i>
+    <ul class="list-unstyled">
+      <li 
+        v-for="(announcement, index) in announcements" 
+        :key="announcement.id" 
+        class="card mb-3 announcement-item"
+        :style="{'--animation-order': index}"
+        :class="{'border-success': announcement.emailSent, 'border-warning': !announcement.emailSent}"
+      >
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <h3 class="h5 font-weight-bold mb-0">{{ announcement.title }}</h3>
+            <span class="text-muted small">{{ formatDate(announcement.date) }}</span>
+          </div>
+          <p class="mt-2 mb-1">{{ announcement.content }}</p>
+          <div class="mt-2 text-muted small">
+            <i 
+              v-if="announcement.emailSent" 
+              class="fas fa-envelope-circle-check text-success" 
+              title="Email sent"
+            ></i>
+            <i 
+              v-else 
+              class="fas fa-envelope text-secondary" 
+              title="Email not sent"
+            ></i>
+          </div>
         </div>
       </li>
     </ul>
 
-    <AppCreateAnnouncement v-if="showCreate" @close="showCreate = false" @created="addAnnouncement" />
+    <AppCreateAnnouncement 
+      v-if="showCreate" 
+      @close="showCreate = false" 
+      @created="addAnnouncement" 
+    />
   </div>
 </template>
 
@@ -72,7 +96,66 @@ export default {
 </script>
 
 <style scoped>
-.fas.fa-envelope {
-  margin-left: 5px;
+/* Custom animations */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease;
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+}
+
+.announcement-item {
+  animation: fadeInUp 0.5s ease;
+  animation-delay: calc(var(--animation-order) * 0.1s);
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+/* Keyframe animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Custom styles */
+.card {
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.border-success {
+  border-color: #28a745;
+}
+
+.border-warning {
+  border-color: #ffc107;
+}
+
+.fas {
+  font-size: 1.1rem;
+  vertical-align: middle;
 }
 </style>

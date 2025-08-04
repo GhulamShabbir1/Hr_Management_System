@@ -1,4 +1,5 @@
-/* Bootstrap Gradient Extensions */
+
+/* Global styles for your HR management system */
 :root {
   --gradient-primary: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
   --gradient-success: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
@@ -16,7 +17,7 @@ body {
   min-height: 100vh;
 }
 
-/* Bootstrap Gradient Button Extensions */
+/* Gradient Buttons with Animation */
 .btn-gradient-primary {
   background: var(--gradient-primary);
   border: none;
@@ -73,7 +74,7 @@ body {
   color: white;
 }
 
-/* Bootstrap Card Extensions with Gradients */
+/* Cards with Gradient Headers and Animation */
 .card-gradient {
   border: none;
   border-radius: 15px;
@@ -92,7 +93,7 @@ body {
   color: white;
 }
 
-/* Statistics Cards */
+/* Statistics Cards with Animated Hover */
 .stat-card {
   background: white;
   border-radius: 15px;
@@ -124,7 +125,7 @@ body {
 .stat-card-3::before { background: var(--gradient-warning); }
 .stat-card-4::before { background: var(--gradient-info); }
 
-/* Gradient Icons */
+/* Gradient Icons with Animation */
 .icon-gradient {
   width: 50px;
   height: 50px;
@@ -135,6 +136,11 @@ body {
   color: white;
   font-size: 1.5rem;
   margin-bottom: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.icon-gradient:hover {
+  transform: scale(1.1);
 }
 
 .icon-gradient-1 { background: var(--gradient-primary); }
@@ -142,7 +148,7 @@ body {
 .icon-gradient-3 { background: var(--gradient-warning); }
 .icon-gradient-4 { background: var(--gradient-info); }
 
-/* Bootstrap Form Enhancements */
+/* Enhanced Forms with Animation */
 .form-control {
   border-radius: 10px;
   border: 2px solid #dee2e6;
@@ -154,7 +160,7 @@ body {
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-/* Bootstrap Table Enhancements */
+/* Animated Tables */
 .table-gradient {
   border-radius: 15px;
   overflow: hidden;
@@ -168,11 +174,16 @@ body {
   font-weight: 600;
 }
 
-.table-gradient tbody tr:hover {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+.table-gradient tbody tr {
+  transition: all 0.2s ease;
 }
 
-/* Sidebar with Bootstrap */
+.table-gradient tbody tr:hover {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  transform: translateX(5px);
+}
+
+/* Sidebar with Gradient and Animation */
 .sidebar {
   background: var(--gradient-dark);
   min-height: 100vh;
@@ -219,18 +230,25 @@ body {
   color: white;
 }
 
-/* Main Content */
+/* Main Content Area */
 .main-content {
   margin-left: 250px;
   padding: 2rem;
   min-height: 100vh;
+  animation: fadeIn 0.5s ease;
 }
 
-/* Bootstrap Alert Enhancements */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Enhanced Alerts with Gradient */
 .alert-gradient {
   border: none;
   border-radius: 10px;
   color: white;
+  animation: fadeInDown 0.5s ease;
 }
 
 .alert-gradient.alert-success {
@@ -245,10 +263,15 @@ body {
   background: var(--gradient-warning);
 }
 
-/* Bootstrap Badge Enhancements */
+/* Badges with Gradient */
 .badge-gradient {
   background: var(--gradient-primary);
   color: white;
+  transition: all 0.3s ease;
+}
+
+.badge-gradient:hover {
+  transform: scale(1.1);
 }
 
 .badge-gradient.bg-success {
@@ -259,7 +282,7 @@ body {
   background: var(--gradient-danger) !important;
 }
 
-/* Avatar */
+/* Avatar with Gradient */
 .avatar {
   width: 40px;
   height: 40px;
@@ -271,13 +294,19 @@ body {
   color: white;
   font-weight: bold;
   margin-right: 1rem;
+  transition: all 0.3s ease;
 }
 
-/* Bootstrap Modal Enhancements */
+.avatar:hover {
+  transform: scale(1.1);
+}
+
+/* Enhanced Modals */
 .modal-content {
   border: none;
   border-radius: 15px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: fadeInUp 0.3s ease;
 }
 
 .modal-header.bg-gradient {
@@ -286,7 +315,7 @@ body {
   border: none;
 }
 
-/* Responsive */
+/* Responsive Adjustments */
 @media (max-width: 768px) {
   .sidebar {
     margin-left: -250px;
@@ -295,4 +324,23 @@ body {
   .main-content {
     margin-left: 0;
   }
+  
+  .stat-card, .card-gradient {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Additional Animation Classes */
+.animate-hover-grow {
+  transition: transform 0.3s ease;
+}
+.animate-hover-grow:hover {
+  transform: scale(1.05);
+}
+
+.animate-hover-shadow {
+  transition: box-shadow 0.3s ease;
+}
+.animate-hover-shadow:hover {
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
 }
