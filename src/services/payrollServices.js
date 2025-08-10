@@ -1,33 +1,24 @@
 import api from './api';
 
 export default {
-  async getSalaryDetails(employeeId) {
-    const response = await api.get(`/payroll/salary/${employeeId}`);
-    return response.data;
+  async listPayrolls() {
+    const res = await api.get('/payroll/list');
+    return res.data;
   },
-
-  async generatePayslip(employeeId, period) {
-    const response = await api.get(`/payroll/payslip/${employeeId}`, {
-      params: { period },
-      responseType: 'blob'
-    });
-    return response.data;
+  async createPayroll(data) {
+    const res = await api.post('/payroll', data);
+    return res.data;
   },
-
-  async updateSalary(employeeId, salaryData) {
-    const response = await api.put(`/payroll/salary/${employeeId}`, salaryData);
-    return response.data;
+  async getUserPayroll(userId) {
+    const res = await api.get(`/payroll/${userId}`);
+    return res.data;
   },
-
-  async getPayrollHistory(employeeId, year) {
-    const response = await api.get(`/payroll/history/${employeeId}`, {
-      params: { year }
-    });
-    return response.data;
+  async generatePayslip(payrollId) {
+    const res = await api.post(`/payslips/generate/${payrollId}`, null, { responseType: 'blob' });
+    return res.data;
   },
-
-  async processPayroll(payrollData) {
-    const response = await api.post('/payroll/process', payrollData);
-    return response.data;
+  async downloadPayslip(payslipId) {
+    const res = await api.get(`/payslips/download/${payslipId}`, { responseType: 'blob' });
+    return res.data;
   }
 };
