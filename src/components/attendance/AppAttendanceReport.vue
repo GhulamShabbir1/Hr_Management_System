@@ -29,8 +29,8 @@
           </select>
         </div>
         <div class="col-md-3">
-          <button 
-            @click="fetchReport" 
+          <button
+            @click="fetchReport"
             class="btn btn-primary w-100"
             :disabled="loading"
           >
@@ -124,16 +124,16 @@
           <tbody>
             <template v-if="filteredReport.length > 0">
               <tr v-for="record in filteredReport" :key="record.id">
-                <td>{{ record.name }}</td>
-                <td>{{ record.department }}</td>
-                <td>{{ record.totalDays }}</td>
-                <td>{{ record.present }}</td>
-                <td>{{ record.absent }}</td>
-                <td>{{ record.leaves }}</td>
+                <td>{{ record.name || 'N/A' }}</td>
+                <td>{{ record.department || 'N/A' }}</td>
+                <td>{{ Number(record.totalDays || 0) }}</td>
+                <td>{{ Number(record.present || 0) }}</td>
+                <td>{{ Number(record.absent || 0) }}</td>
+                <td>{{ Number(record.leaves || 0) }}</td>
                 <td>
                   <div class="progress" style="height: 20px;">
-                    <div 
-                      class="progress-bar" 
+                    <div
+                      class="progress-bar"
                       :class="getPercentageClass(record)"
                       :style="{ width: attendancePercentage(record) + '%' }"
                       role="progressbar"
@@ -146,8 +146,8 @@
                   </div>
                 </td>
                 <td>
-                  <button 
-                    @click="viewDetails(record)" 
+                  <button
+                    @click="viewDetails(record)"
                     class="btn btn-sm btn-outline-primary"
                     aria-label="View details"
                   >
@@ -179,10 +179,10 @@
               &laquo;
             </button>
           </li>
-          <li 
-            v-for="page in totalPages" 
-            :key="page" 
-            class="page-item" 
+          <li
+            v-for="page in totalPages"
+            :key="page"
+            class="page-item"
             :class="{ active: currentPage === page }"
           >
             <button class="page-link" @click="goToPage(page)">{{ page }}</button>
@@ -198,8 +198,8 @@
 
     <!-- Export Button -->
     <div class="d-flex justify-content-end mt-3">
-      <button 
-        @click="exportToExcel" 
+      <button
+        @click="exportToExcel"
         class="btn btn-success"
         :disabled="loadingExport || filteredReport.length === 0"
       >
@@ -214,9 +214,9 @@
         <div class="modal-content">
           <div class="modal-header bg-primary text-white">
             <h5 class="modal-title">Attendance Details</h5>
-            <button 
-              type="button" 
-              class="btn-close btn-close-white" 
+            <button
+              type="button"
+              class="btn-close btn-close-white"
               data-bs-dismiss="modal"
               aria-label="Close"
             ></button>
@@ -225,7 +225,7 @@
             <div v-if="selectedEmployee">
               <h4>{{ selectedEmployee.name }}</h4>
               <p class="text-muted">{{ selectedEmployee.department }}</p>
-              
+
               <table class="table table-sm">
                 <thead>
                   <tr>
@@ -265,22 +265,21 @@
     </div>
 
     <!-- Toast Notification -->
-    <AppNotificationToast 
-      :show="showToast" 
-      :message="toastMessage" 
-      :type="toastType" 
+    <AppNotificationToast
+      :show="showToast"
+      :message="toastMessage"
+      :type="toastType"
       @close="showToast = false"
     />
   </div>
 </template>
 
 <script>
-import axios from 'axios';
 import { Modal } from 'bootstrap';
 import AppNotificationToast from '@/components/announcements/AppNotificationToast.vue';
 
 export default {
-  name: "AppAttendanceReport",
+  name: 'AppAttendanceReport',
   components: { AppNotificationToast },
   data() {
     const currentYear = new Date().getFullYear();
@@ -289,10 +288,10 @@ export default {
       selectedYear: currentYear,
       selectedDept: 'all',
       months: [
-        "January","February","March","April","May","June",
-        "July","August","September","October","November","December"
+        'January','February','March','April','May','June',
+        'July','August','September','October','November','December'
       ],
-      years: Array.from({length: 5}, (_, i) => currentYear - 2 + i),
+      years: Array.from({ length: 5 }, (_, i) => currentYear - 2 + i),
       departments: [
         { id: 1, name: 'HR' },
         { id: 2, name: 'IT' },
@@ -321,19 +320,13 @@ export default {
   },
   computed: {
     totalPages() {
-      return Math.ceil(this.totalRecords / this.perPage);
+      return Math.max(1, Math.ceil(this.totalRecords / this.perPage));
     }
   },
   watch: {
-    selectedMonth() {
-      this.currentPage = 1;
-    },
-    selectedYear() {
-      this.currentPage = 1;
-    },
-    selectedDept() {
-      this.currentPage = 1;
-    }
+    selectedMonth() { this.currentPage = 1; },
+    selectedYear() { this.currentPage = 1; },
+    selectedDept() { this.currentPage = 1; }
   },
   mounted() {
     this.detailsModal = new Modal(document.getElementById('employeeDetailsModal'));
@@ -351,36 +344,47 @@ export default {
           per_page: this.perPage
         };
 
-        const response = await axios.get('/api/attendance/report', { params });
-        this.attendanceReport = response.data.data;
+        const response = await this.$axios.get('/attendances', { params });
+        const payload = response?.data?.data ?? response?.data ?? [];
+        const list = Array.isArray(payload) ? payload : [];
+
+        // If backend returns aggregated records, use as-is; else default fields to 0
+        this.attendanceReport = list.map((r) => ({
+          id: r.id || r.userId || r.employeeId || Math.random().toString(36).slice(2),
+          name: r.name || r.userName || r.employeeName || 'Unknown',
+          department: r.department || r.dept || 'N/A',
+          totalDays: Number(r.totalDays || r.days || 0),
+          present: Number(r.present || r.totalPresent || 0),
+          absent: Number(r.absent || r.totalAbsent || 0),
+          leaves: Number(r.leaves || r.totalLeaves || 0)
+        }));
+
         this.filteredReport = this.attendanceReport;
-        this.totalRecords = response.data.meta.total;
+        // If meta exists, use it; otherwise compute from array length
+        this.totalRecords = response?.data?.meta?.total ?? this.filteredReport.length;
         this.calculateStats();
         this.showNotification('Report generated successfully');
       } catch (error) {
-        console.error('Error fetching report:', error);
-        this.showNotification(error.response?.data?.message || 'Failed to fetch report', 'error');
+        this.showNotification(error?.response?.data?.message || 'Failed to fetch report', 'error');
         this.resetStats();
         this.filteredReport = [];
+        this.totalRecords = 0;
       } finally {
         this.loading = false;
       }
     },
     calculateStats() {
-      if (this.filteredReport.length === 0) {
+      if (!Array.isArray(this.filteredReport) || this.filteredReport.length === 0) {
         this.resetStats();
         return;
       }
+      const list = this.filteredReport;
+      this.stats.totalEmployees = list.length;
+      this.stats.totalAbsent = list.reduce((sum, r) => sum + Number(r.absent || 0), 0);
+      this.stats.totalLeaves = list.reduce((sum, r) => sum + Number(r.leaves || 0), 0);
 
-      this.stats.totalEmployees = this.filteredReport.length;
-      this.stats.totalAbsent = this.filteredReport.reduce((sum, record) => sum + record.absent, 0);
-      this.stats.totalLeaves = this.filteredReport.reduce((sum, record) => sum + record.leaves, 0);
-      
-      const totalPercentage = this.filteredReport.reduce((sum, record) => {
-        return sum + parseFloat(this.attendancePercentage(record));
-      }, 0);
-      
-      this.stats.avgAttendance = (totalPercentage / this.filteredReport.length).toFixed(1);
+      const totalPercentage = list.reduce((sum, r) => sum + Number(this.attendancePercentage(r)), 0);
+      this.stats.avgAttendance = (totalPercentage / list.length).toFixed(1);
     },
     resetStats() {
       this.stats = {
@@ -398,11 +402,13 @@ export default {
       this.fetchReport();
     },
     attendancePercentage(record) {
-      if (record.totalDays === 0) return 0;
-      return ((record.present / record.totalDays) * 100).toFixed(1);
+      const total = Number(record.totalDays || 0);
+      const present = Number(record.present || 0);
+      if (total === 0) return 0;
+      return ((present / total) * 100).toFixed(1);
     },
     getPercentageClass(record) {
-      const percentage = this.attendancePercentage(record);
+      const percentage = Number(this.attendancePercentage(record));
       if (percentage >= 90) return 'bg-success';
       if (percentage >= 70) return 'bg-warning';
       return 'bg-danger';
@@ -410,27 +416,37 @@ export default {
     async exportToExcel() {
       this.loadingExport = true;
       try {
-        const params = {
-          month: this.selectedMonth,
-          year: this.selectedYear,
-          department: this.selectedDept !== 'all' ? this.selectedDept : null
-        };
+        if (!Array.isArray(this.filteredReport) || this.filteredReport.length === 0) {
+          this.showNotification('No data to export', 'warning');
+          return;
+        }
 
-        const response = await axios.get('/api/attendance/export', {
-          params,
-          responseType: 'blob'
-        });
+        const headers = ['Employee', 'Department', 'Total Days', 'Present', 'Absent', 'Leaves', 'Attendance %'];
+        const csvContent = [
+          headers.join(','),
+          ...this.filteredReport.map(r => [
+            r.name || 'N/A',
+            r.department || 'N/A',
+            Number(r.totalDays || 0),
+            Number(r.present || 0),
+            Number(r.absent || 0),
+            Number(r.leaves || 0),
+            this.attendancePercentage(r)
+          ].join(','))
+        ].join('\n');
 
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `attendance_report_${this.selectedMonth}_${this.selectedYear}.xlsx`);
+        link.setAttribute('download', `attendance_report_${this.selectedMonth}_${this.selectedYear}.csv`);
         document.body.appendChild(link);
         link.click();
-        this.showNotification('Export started successfully');
+        document.body.removeChild(link);
+
+        this.showNotification('Export completed');
       } catch (error) {
-        console.error('Export error:', error);
-        this.showNotification(error.response?.data?.message || 'Export failed', 'error');
+        this.showNotification(error?.response?.data?.message || 'Export failed', 'error');
       } finally {
         this.loadingExport = false;
       }
@@ -439,16 +455,50 @@ export default {
       try {
         this.selectedEmployee = null;
         this.detailsModal.show();
-        
-        const response = await axios.get(`/api/attendance/employee/${employee.id}`, {
+
+        const response = await this.$axios.get('/attendances', {
           params: {
+            userId: employee.id,
             month: this.selectedMonth,
             year: this.selectedYear
           }
         });
-        this.selectedEmployee = response.data.data;
+        const payload = response?.data?.data ?? response?.data ?? [];
+        const list = Array.isArray(payload) ? payload : [];
+
+        // Build daily attendance list
+        const dailyAttendance = list.map((it) => {
+          const date = it.date || (it.checkIn || it.check_in) || it.created_at || '';
+          const dateStr = date ? new Date(date).toISOString().slice(0, 10) : '';
+          const checkIn = it.checkIn || it.check_in || it.checkin_time || it.check_in_time || null;
+          const checkOut = it.checkOut || it.check_out || it.checkout_time || it.check_out_time || null;
+
+          const hours = (() => {
+            const parse = (v) => {
+              if (!v) return null;
+              const dt = new Date(v);
+              if (!isNaN(dt)) return dt;
+              return new Date(`1970-01-01T${v}`);
+            };
+            const inDt = parse(checkIn);
+            const outDt = parse(checkOut);
+            if (!inDt || !outDt || isNaN(inDt) || isNaN(outDt)) return '-';
+            const diff = (outDt - inDt) / (1000 * 60 * 60);
+            return diff > 0 ? diff.toFixed(2) : '-';
+          })();
+
+          const status = checkIn ? (checkOut ? 'present' : 'pending') : 'absent';
+
+          return { date: dateStr, checkIn, checkOut, status, hours };
+        });
+
+        this.selectedEmployee = {
+          id: employee.id,
+          name: employee.name || 'Unknown',
+          department: employee.department || 'N/A',
+          dailyAttendance
+        };
       } catch (error) {
-        console.error('Error loading details:', error);
         this.showNotification('Failed to load employee details', 'error');
         this.detailsModal.hide();
       }
@@ -456,6 +506,7 @@ export default {
     getStatusClass(day) {
       if (day.status === 'present') return 'bg-success';
       if (day.status === 'leave') return 'bg-info';
+      if (day.status === 'pending') return 'bg-warning';
       if (day.status === 'holiday') return 'bg-secondary';
       return 'bg-danger'; // absent
     },

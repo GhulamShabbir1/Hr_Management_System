@@ -80,6 +80,18 @@
               :max="today"
             >
           </div>
+
+          <div class="mb-3">
+            <label class="form-label">Resume (PDF/DOC)</label>
+            <input type="file" accept=".pdf,.doc,.docx" class="form-control" @change="onResumeChange" />
+            <small v-if="resumeFile" class="form-text">Selected: {{ resumeFile.name }}</small>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Contract (PDF/DOC)</label>
+            <input type="file" accept=".pdf,.doc,.docx" class="form-control" @change="onContractChange" />
+            <small v-if="contractFile" class="form-text">Selected: {{ contractFile.name }}</small>
+          </div>
           
           <div class="mb-4">
             <div class="form-check form-switch">
@@ -132,6 +144,8 @@ export default {
     return {
       today,
       loading: false,
+      resumeFile: null,
+      contractFile: null,
       departments: [
         { id: 1, name: 'Human Resources' },
         { id: 2, name: 'Information Technology' },
@@ -152,21 +166,18 @@ export default {
     };
   },
   methods: {
+    onResumeChange(e) { this.resumeFile = e.target.files?.[0] || null; },
+    onContractChange(e) { this.contractFile = e.target.files?.[0] || null; },
     async submitForm() {
       this.loading = true;
       try {
-        // Validate email format
         if (!this.validateEmail(this.form.email)) {
           throw new Error('Please enter a valid email address');
         }
-
-        // Validate join date
         if (new Date(this.form.joinDate) > new Date()) {
           throw new Error('Join date cannot be in the future');
         }
-
-        // Emit the form data to parent
-        this.$emit("save", this.form);
+        this.$emit("save", { ...this.form, resumeFile: this.resumeFile, contractFile: this.contractFile });
       } catch (error) {
         this.$emit("error", error.message);
       } finally {

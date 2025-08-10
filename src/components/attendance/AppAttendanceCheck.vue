@@ -20,7 +20,7 @@
     <div class="d-flex gap-3 mb-4">
       <button
         @click="checkIn"
-        :disabled="hasCheckedIn || loading"
+        :disabled="!currentUserId || hasCheckedIn || loading"
         class="btn btn-success px-4 py-2"
       >
         <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
@@ -29,7 +29,7 @@
       </button>
       <button
         @click="checkOut"
-        :disabled="!hasCheckedIn || hasCheckedOut || loading"
+        :disabled="!currentUserId || !hasCheckedIn || hasCheckedOut || loading"
         class="btn btn-danger px-4 py-2"
       >
         <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
@@ -39,6 +39,7 @@
       <button
         @click="exportToExcel"
         class="btn btn-primary ms-auto px-4 py-2"
+        :disabled="filteredRecords.length === 0"
       >
         <i class="bi bi-file-earmark-excel me-2"></i>
         Export to Excel
@@ -51,7 +52,7 @@
       <div class="row">
         <div class="col-md-6">
           <p><strong>Check-in Time:</strong> {{ todayCheckIn || 'Not recorded' }}</p>
-          <p><strong>Status:</strong> 
+          <p><strong>Status:</strong>
             <span class="badge" :class="hasCheckedIn ? 'bg-success' : 'bg-secondary'">
               {{ hasCheckedIn ? 'Checked In' : 'Not Checked In' }}
             </span>
@@ -59,7 +60,7 @@
         </div>
         <div class="col-md-6">
           <p><strong>Check-out Time:</strong> {{ todayCheckOut || 'Not recorded' }}</p>
-          <p><strong>Status:</strong> 
+          <p><strong>Status:</strong>
             <span class="badge" :class="hasCheckedOut ? 'bg-danger' : 'bg-secondary'">
               {{ hasCheckedOut ? 'Checked Out' : 'Not Checked Out' }}
             </span>
@@ -73,11 +74,11 @@
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="h4 mb-0">Attendance History</h3>
         <div class="input-group" style="width: 250px;">
-          <input 
-            v-model="dateFilter" 
-            type="date" 
+          <input
+            v-model="dateFilter"
+            type="date"
             class="form-control"
-            @change="fetchAttendanceHistory"
+            @change="fetchAttendanceRecords"
           >
           <button class="btn btn-outline-secondary" type="button">
             <i class="bi bi-calendar"></i>
@@ -108,23 +109,26 @@
               </td>
               <td>{{ calculateHours(record) }}</td>
             </tr>
+            <tr v-if="filteredRecords.length === 0">
+              <td colspan="5" class="text-center text-muted py-3">No records</td>
+            </tr>
           </tbody>
         </table>
       </div>
     </div>
 
     <!-- Success/Error Toast Notification -->
-    <AppNotificationToast 
-      :show="showToast" 
-      :message="toastMessage" 
-      :type="toastType" 
+    <AppNotificationToast
+      :show="showToast"
+      :message="toastMessage"
+      :type="toastType"
       @close="showToast = false"
     />
   </div>
 </template>
 
 <script>
-import { mapActions, mapGetters, mapState } from 'vuex';
+import { mapActions, mapGetters } from 'vuex';
 import AppNotificationToast from '../announcements/AppNotificationToast.vue';
 
 export default {
@@ -138,106 +142,115 @@ export default {
       loading: false,
       showToast: false,
       toastMessage: "",
-      toastType: "success"
+      toastType: "success",
+      clockTimer: null
     };
   },
   computed: {
-    ...mapState('attendance', ['records']),
     ...mapGetters('attendance', ['getAttendanceByEmployee']),
-    
-    // Get current user ID from auth store
+
+    // Get current user ID safely
     currentUserId() {
-      return this.$store.state.auth.user?.id;
+      const user = this.$store.getters['auth/currentUser'] || this.$store.state.auth.user;
+      return user && user.id ? user.id : null;
     },
-    
+
     // Filter records for current user
     filteredRecords() {
-      return this.getAttendanceByEmployee(this.currentUserId);
+      if (!this.currentUserId) return [];
+      const list = this.getAttendanceByEmployee(this.currentUserId);
+      // Optional date filter (if used): filter by selected date's month, etc.
+      return Array.isArray(list) ? list : [];
     },
-    
+
     // Today's check-in record
     todayRecord() {
       const today = new Date().toISOString().split('T')[0];
       return this.filteredRecords.find(r => r.date === today);
     },
-    
+
     todayCheckIn() {
-      return this.todayRecord?.checkInTime;
+      return this.todayRecord?.checkInTime || null;
     },
-    
+
     todayCheckOut() {
-      return this.todayRecord?.checkOutTime;
+      return this.todayRecord?.checkOutTime || null;
     },
-    
+
     hasCheckedIn() {
       return !!this.todayCheckIn;
     },
-    
+
     hasCheckedOut() {
       return !!this.todayCheckOut;
     }
   },
   created() {
     this.updateDateTime();
-    setInterval(this.updateDateTime, 1000);
+    this.clockTimer = setInterval(this.updateDateTime, 1000);
     this.fetchAttendanceRecords();
+  },
+  beforeDestroy() {
+    if (this.clockTimer) clearInterval(this.clockTimer);
   },
   methods: {
     ...mapActions('attendance', ['fetchAttendance', 'markAttendance']),
-    
+
     updateDateTime() {
       const now = new Date();
       this.currentTime = now.toLocaleTimeString();
       this.currentDate = now.toLocaleDateString();
     },
-    
+
     async fetchAttendanceRecords() {
       try {
         await this.fetchAttendance();
-      } catch (error) {
+      } catch (_) {
         this.showNotification('Failed to fetch attendance data', 'error');
       }
     },
-    
+
     async checkIn() {
+      if (!this.currentUserId) return;
       this.loading = true;
       try {
-        const today = new Date().toISOString().split('T')[0];
-        await this.markAttendance({
+        const res = await this.markAttendance({
           employeeId: this.currentUserId,
-          date: today,
           status: 'check-in'
         });
+        if (!res || !res.success) throw new Error(res?.message || 'Check-in failed');
         this.showNotification('Checked in successfully!');
       } catch (error) {
-        this.showNotification(error.response?.data?.message || 'Check-in failed', 'error');
+        this.showNotification(error.message || 'Check-in failed', 'error');
       } finally {
         this.loading = false;
       }
     },
-    
+
     async checkOut() {
+      if (!this.currentUserId) return;
       this.loading = true;
       try {
-        const today = new Date().toISOString().split('T')[0];
-        await this.markAttendance({
+        const res = await this.markAttendance({
           employeeId: this.currentUserId,
-          date: today,
           status: 'check-out'
         });
+        if (!res || !res.success) throw new Error(res?.message || 'Check-out failed');
         this.showNotification('Checked out successfully!');
       } catch (error) {
-        this.showNotification(error.response?.data?.message || 'Check-out failed', 'error');
+        this.showNotification(error.message || 'Check-out failed', 'error');
       } finally {
         this.loading = false;
       }
     },
-    
+
     async exportToExcel() {
       try {
-        // This would be an API call to your backend export endpoint
-        // Using mock implementation for demonstration
         const data = this.filteredRecords;
+        if (!Array.isArray(data) || data.length === 0) {
+          this.showNotification('No data to export', 'warning');
+          return;
+        }
         const headers = ['Date', 'Check-in', 'Check-out', 'Status', 'Hours'];
         const csvContent = [
           headers.join(','),
@@ -249,7 +262,7 @@ export default {
             this.calculateHours(item)
           ].join(','))
         ].join('\n');
-        
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -258,37 +271,54 @@ export default {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
-        this.showNotification('Export started successfully');
-      } catch (error) {
+
+        this.showNotification('Export completed');
+      } catch (_) {
         this.showNotification('Export failed', 'error');
       }
     },
-    
+
     formatDate(dateString) {
-      return new Date(dateString).toLocaleDateString();
+      if (!dateString) return '-';
+      try {
+        return new Date(dateString).toLocaleDateString();
+      } catch {
+        return dateString;
+      }
     },
-    
+
+    // Robust parsing: supports "HH:mm:ss", "YYYY-MM-DDTHH:mm:ss", or server timestamps
     calculateHours(record) {
-      if (!record.checkInTime || !record.checkOutTime) return '-';
-      const inTime = new Date(`1970-01-01T${record.checkInTime}`);
-      const outTime = new Date(`1970-01-01T${record.checkOutTime}`);
-      const diff = (outTime - inTime) / (1000 * 60 * 60);
-      return diff.toFixed(2);
+      const parseTime = (value) => {
+        if (!value) return null;
+        // If already a full datetime
+        const dt = new Date(value);
+        if (!isNaN(dt.getTime())) return dt;
+
+        // Try time-only strings: compose with a safe date
+        return new Date(`1970-01-01T${value}`);
+      };
+
+      const inDt = parseTime(record.checkInTime);
+      const outDt = parseTime(record.checkOutTime);
+      if (!inDt || !outDt || isNaN(inDt) || isNaN(outDt)) return '-';
+
+      const diff = (outDt - inDt) / (1000 * 60 * 60);
+      return diff > 0 ? diff.toFixed(2) : '-';
     },
-    
+
     getStatusClass(record) {
       if (!record.checkInTime) return 'bg-secondary';
       if (!record.checkOutTime) return 'bg-warning';
       return 'bg-success';
     },
-    
+
     getStatusText(record) {
       if (!record.checkInTime) return 'Absent';
       if (!record.checkOutTime) return 'Pending Check-out';
       return 'Completed';
     },
-    
+
     showNotification(message, type = 'success') {
       this.toastMessage = message;
       this.toastType = type;

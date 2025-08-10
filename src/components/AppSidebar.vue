@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Mobile Toggle Button -->
-    <button 
+    <button
       v-if="isMobile"
       @click="toggleMobileMenu"
       class="mobile-menu-toggle"
@@ -11,34 +11,38 @@
     </button>
 
     <!-- Sidebar -->
-    <div 
-      class="sidebar" 
+    <div
+      class="sidebar"
       :class="{ 'mobile-visible': isMobileVisible }"
       @click.self="handleOutsideClick"
     >
       <div class="sidebar-header">
         <div class="brand-container">
-          <h3 class="brand-title" style="color: black;">HRMS</h3>
-          <p class="brand-subtitle" style="color: gray">Human Resource System</p>
+          <h3 class="brand-title">HRMS</h3>
+          <p class="brand-subtitle">Human Resource System</p>
         </div>
-        <div class="user-info" v-if="user">
+        <div class="user-info" v-if="currentUser">
           <div class="avatar">
-            {{ getInitials(user.name) }}
+            {{ getInitials(currentUser.name) }}
           </div>
           <div class="user-details">
-            <p class="user-name">{{ user.name }}</p>
-            <span class="user-role badge">{{ formatRole(user.role) }}</span>
+            <p class="user-name">{{ currentUser.name }}</p>
+            <span class="user-role badge">{{ formatRole(currentUser.role) }}</span>
           </div>
         </div>
       </div>
-      
+
       <div class="menu-container">
         <ul class="nav flex-column">
-          <li v-for="(item, index) in filteredMenuItems" :key="`${item.path}-${index}`" class="nav-item">
-            <router-link 
-              :to="item.path" 
+          <li
+            v-for="(item, index) in filteredMenuItems"
+            :key="`${item.path}-${index}`"
+            class="nav-item"
+          >
+            <router-link
+              :to="item.path"
               class="nav-link"
-              :class="{ 
+              :class="{
                 active: isActive(item.path),
                 'has-notification': showNotification(item)
               }"
@@ -47,27 +51,29 @@
             >
               <i :class="item.icon" class="nav-icon"></i>
               <span class="nav-text">{{ item.label }}</span>
-              <span 
-                v-if="showNotification(item)" 
+              <span
+                v-if="showNotification(item)"
                 class="notification-badge"
                 aria-label="New notifications"
               ></span>
-              <i 
-                v-if="item.children" 
+              <i
+                v-if="item.children"
                 class="fas fa-chevron-down toggle-submenu"
                 :class="{ 'rotate': isSubmenuOpen(item) }"
+                @click.stop="toggleSubmenu(item)"
               ></i>
             </router-link>
 
             <!-- Submenu Items -->
             <transition name="slide">
-              <ul 
-                v-if="item.children && isSubmenuOpen(item)" 
-                class="submenu"
-              >
-                <li v-for="(child, childIndex) in item.children" :key="`${child.path}-${childIndex}`" class="submenu-item">
-                  <router-link 
-                    :to="child.path" 
+              <ul v-if="item.children && isSubmenuOpen(item)" class="submenu">
+                <li
+                  v-for="(child, childIndex) in item.children"
+                  :key="`${child.path}-${childIndex}`"
+                  class="submenu-item"
+                >
+                  <router-link
+                    :to="child.path"
                     class="submenu-link"
                     :class="{ active: isActive(child.path) }"
                     @click.native="handleNavClick"
@@ -81,9 +87,9 @@
           </li>
         </ul>
       </div>
-      
+
       <div class="sidebar-footer">
-        <button 
+        <button
           @click="handleLogout"
           class="btn btn-logout"
           aria-label="Logout"
@@ -98,8 +104,8 @@
     </div>
 
     <!-- Overlay for mobile -->
-    <div 
-      v-if="isMobile && isMobileVisible" 
+    <div
+      v-if="isMobile && isMobileVisible"
       class="sidebar-overlay"
       @click="toggleMobileMenu"
     ></div>
@@ -114,36 +120,24 @@ export default {
   data() {
     return {
       menuItems: [
-        { 
-          label: "Dashboard", 
-          path: "/dashboard", 
-          icon: "fas fa-tachometer-alt", 
+        {
+          label: "Dashboard",
+          path: "/dashboard",
+          icon: "fas fa-tachometer-alt",
           roles: ["Admin", "HR", "Employee"],
           notification: false
         },
-        { 
-          label: "Employee Management", 
-          path: "/employees", 
-          icon: "fas fa-users", 
+        {
+          label: "Employee Management",
+          path: "/employees",
+          icon: "fas fa-users",
           roles: ["Admin", "HR"],
-          notification: false,
-          children: [
-            {
-              label: "Employee List",
-              path: "/employees/list",
-              icon: "fas fa-list"
-            },
-            {
-              label: "Add Employee",
-              path: "/employees/add",
-              icon: "fas fa-user-plus"
-            }
-          ]
+          notification: false
         },
-        { 
-          label: "Attendance", 
-          path: "/attendance", 
-          icon: "fas fa-clock", 
+        {
+          label: "Attendance",
+          path: "/attendance",
+          icon: "fas fa-clock",
           roles: ["Admin", "HR", "Employee"],
           notification: true,
           children: [
@@ -153,49 +147,36 @@ export default {
               icon: "fas fa-fingerprint"
             },
             {
-              label: "Attendance Report",
-              path: "/attendance/report",
+              label: "Attendance Reports",
+              path: "/attendance/reports",
               icon: "fas fa-history"
             }
           ]
         },
-        { 
-          label: "Leave Management", 
-          path: "/leave", 
-          icon: "fas fa-calendar-minus", 
+        {
+          label: "Leave Management",
+          path: "/attendance/leave-request",
+          icon: "fas fa-calendar-minus",
           roles: ["Admin", "HR", "Employee"],
-          notification: true,
-          children: [
-            {
-              label: "Request Leave",
-              path: "/leave/request",
-              icon: "fas fa-plus-circle"
-            },
-            {
-              label: "Leave Approvals",
-              path: "/leave/approvals",
-              icon: "fas fa-check-circle",
-              roles: ["Admin", "HR"]
-            }
-          ]
+          notification: true
         },
-        { 
-          label: "Payroll", 
-          path: "/payroll", 
-          icon: "fas fa-money-bill-wave", 
+        {
+          label: "Payroll",
+          path: "/payroll",
+          icon: "fas fa-money-bill-wave",
           roles: ["HR", "Admin"],
           notification: false
         },
-        { 
-          label: "Performance", 
-          path: "/performance", 
-          icon: "fas fa-star", 
-          roles: ["HR", "Admin"],
+        {
+          label: "Performance",
+          path: "/performance",
+          icon: "fas fa-star",
+          roles: ["HR", "Admin", "Manager"],
           notification: true,
           children: [
             {
               label: "Reviews",
-              path: "/performance/reviews",
+              path: "/performance",
               icon: "fas fa-clipboard-check"
             },
             {
@@ -205,41 +186,32 @@ export default {
             }
           ]
         },
-        { 
-          label: "Announcements", 
-          path: "/announcements", 
-          icon: "fas fa-bullhorn", 
+        {
+          label: "Announcements",
+          path: "/announcements",
+          icon: "fas fa-bullhorn",
           roles: ["Admin", "HR", "Employee"],
-          notification: false
-        },
-        { 
-          label: "Reports", 
-          path: "/reports", 
-          icon: "fas fa-chart-pie", 
-          roles: ["Admin", "HR"],
           notification: false
         }
       ],
       isMobileVisible: false,
       isMobile: false,
       openSubmenus: [],
-      appVersion: process.env.VUE_APP_VERSION || '1.0.0'
+      appVersion: process.env.VUE_APP_VERSION || "1.0.0"
     };
   },
   computed: {
-    ...mapGetters("auth", ["user", "userRole"]),
+    ...mapGetters("auth", ["currentUser", "userRole"]),
     filteredMenuItems() {
       if (!this.userRole) return [];
-      
       return this.menuItems
-        .filter(item => item.roles.includes(this.userRole))
-        .map(item => {
-          // Filter submenu items by role if they exist
+        .filter((item) => item.roles.includes(this.userRole))
+        .map((item) => {
           if (item.children) {
             return {
               ...item,
-              children: item.children.filter(child => 
-                !child.roles || child.roles.includes(this.userRole)
+              children: item.children.filter(
+                (child) => !child.roles || child.roles.includes(this.userRole)
               )
             };
           }
@@ -250,17 +222,20 @@ export default {
   methods: {
     ...mapActions("auth", ["logout"]),
     getInitials(name) {
-      if (!name) return '';
-      return name.split(' ').map(n => n[0]).join('').toUpperCase();
+      if (!name) return "";
+      return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase();
     },
     formatRole(role) {
-      return role || 'User';
+      return role || "User";
     },
     isActive(path) {
       return this.$route.path.startsWith(path);
     },
     showNotification(item) {
-      // In a real app, this would check actual notification state
       return item.notification;
     },
     isSubmenuOpen(item) {
@@ -268,37 +243,19 @@ export default {
     },
     toggleSubmenu(item) {
       const index = this.openSubmenus.indexOf(item.path);
-      if (index === -1) {
-        this.openSubmenus.push(item.path);
-      } else {
-        this.openSubmenus.splice(index, 1);
-      }
+      if (index === -1) this.openSubmenus.push(item.path);
+      else this.openSubmenus.splice(index, 1);
     },
     async handleLogout() {
       try {
         await this.logout();
-        this.$router.push("/login");
-      } catch (error) {
-        console.error("Logout error:", error);
+      } finally {
         this.$router.push("/login");
       }
     },
-    handleNavClick(event) {
-      // Close mobile menu on navigation
+    handleNavClick() {
       if (this.isMobile) {
         this.isMobileVisible = false;
-      }
-      
-      // Check if clicked on submenu toggle
-      const toggle = event.target.closest('.toggle-submenu');
-      if (toggle) {
-        event.preventDefault();
-        const navItem = event.target.closest('.nav-item');
-        const link = navItem.querySelector('.nav-link');
-        const item = this.menuItems.find(i => i.path === link.getAttribute('to'));
-        if (item) {
-          this.toggleSubmenu(item);
-        }
       }
     },
     handleOutsideClick() {
@@ -318,22 +275,21 @@ export default {
   },
   mounted() {
     this.checkScreenSize();
-    window.addEventListener('resize', this.checkScreenSize);
-    
+    window.addEventListener("resize", this.checkScreenSize);
+
     // Open submenu if current route is a child
     const currentPath = this.$route.path;
     for (const item of this.menuItems) {
-      if (item.children && item.children.some(child => currentPath.startsWith(child.path))) {
+      if (item.children && item.children.some((child) => currentPath.startsWith(child.path))) {
         this.openSubmenus.push(item.path);
       }
     }
   },
   beforeDestroy() {
-    window.removeEventListener('resize', this.checkScreenSize);
+    window.removeEventListener("resize", this.checkScreenSize);
   }
 };
 </script>
-
 
 <style scoped>
 :root {
@@ -741,27 +697,27 @@ export default {
   .mobile-menu-toggle {
     display: flex;
   }
-  
+
   .sidebar {
     transform: translateX(-100%);
     box-shadow: none;
   }
-  
+
   .sidebar.mobile-visible {
     transform: translateX(0);
     box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
   }
-  
+
   .sidebar-header {
     padding: 1rem;
   }
-  
+
   .nav-link {
     padding: 0.75rem 1rem;
   }
-  
+
   .submenu-link {
     padding-left: 2.5rem;
   }
 }
-</style> 
+</style>

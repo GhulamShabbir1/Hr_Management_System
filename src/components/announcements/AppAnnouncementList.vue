@@ -58,26 +58,30 @@
         :key="announcement.id || index" 
         class="card mb-3 announcement-item"
         :style="{'--animation-order': index}"
-        :class="{'border-success': announcement.is_active, 'border-warning': !announcement.is_active}"
+        :class="{'border-success': isActive(announcement), 'border-warning': !isActive(announcement)}"
       >
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center">
             <h3 class="h5 font-weight-bold mb-0">{{ announcement.title || 'No Title' }}</h3>
-            <span class="text-muted small">{{ formatDate(announcement.created) }}</span>
+            <span class="text-muted small">
+              {{ formatDate(announcement.createdAt || announcement.created || announcement.created_at) }}
+            </span>
           </div>
-          <p class="mt-2 mb-1">{{ announcement.message || 'No Message' }}</p>
+          <p class="mt-2 mb-1">
+            {{ announcement.content || announcement.message || announcement.body || announcement.description || 'No Message' }}
+          </p>
           <div class="mt-2 text-muted small">
             <i 
-              v-if="announcement.is_active" 
+              v-if="isActive(announcement)" 
               class="fas fa-envelope-circle-check text-success" 
-              title="Email sent"
+              title="Active / Published"
             ></i>
             <i 
               v-else 
               class="fas fa-envelope text-secondary" 
-              title="Email not sent"
+              title="Inactive / Draft"
             ></i>
-            <span class="ml-2">{{ announcement.is_active ? 'Published' : 'Draft' }}</span>
+            <span class="ml-2">{{ isActive(announcement) ? 'Published' : 'Draft' }}</span>
           </div>
         </div>
       </li>
@@ -99,40 +103,47 @@
 </template>
 
 <script>
-import { mapState, mapActions } from 'vuex';
+import { mapActions } from 'vuex';
 import AppCreateAnnouncement from "./AppCreateAnnouncement.vue";
 
 export default {
+  name: 'AppAnnouncementList',
   components: { AppCreateAnnouncement },
   data() {
     return {
       showCreate: false,
       createLoading: false,
-      debugMode: true // Set to false in production
+      debugMode: false // set true to see debug info
     };
   },
   computed: {
-    ...mapState('announcements', {
-      announcements: state => state.announcements || [],
-      loading: state => state.loading,
-      error: state => state.error
-    }),
-    ...mapState('auth', {
-      userRole: state => state.user?.role || state.userRole || 'employee'
-    }),
+    // Use namespaced getters from announcements store
+    announcements() {
+      return this.$store.getters['announcements/allAnnouncements'] || [];
+    },
+    loading() {
+      return this.$store.getters['announcements/isLoading'];
+    },
+    error() {
+      return this.$store.getters['announcements/error'];
+    },
+    // Role
+    userRole() {
+      const user = this.$store.getters['auth/currentUser'] || this.$store.state.auth.user || {};
+      return user.role || 'employee';
+    },
     isAdmin() {
-      const role = this.userRole?.toLowerCase();
-      return role === "admin" || role === "superadmin";
+      const role = (this.userRole || '').toLowerCase();
+      return role === 'admin' || role === 'superadmin' || role === 'hr';
     }
   },
   watch: {
     announcements(newVal) {
-      console.log('Announcements updated:', newVal);
+      if (this.debugMode) console.log('Announcements updated:', newVal);
     }
   },
   created() {
     this.fetchAnnouncements();
-    console.log('Component initialized, fetching announcements...');
   },
   methods: {
     ...mapActions('announcements', ['fetchAnnouncements', 'addAnnouncement']),
@@ -142,26 +153,41 @@ export default {
     async handleAnnouncementCreated(newAnnouncement) {
       this.createLoading = true;
       try {
-        await this.addAnnouncement({
+        // Ensure store receives expected fields; store also accepts aliases
+        const res = await this.addAnnouncement({
           title: newAnnouncement.title,
-          message: newAnnouncement.message,
-          is_active: newAnnouncement.is_active ? 1 : 0
+          content: newAnnouncement.content || newAnnouncement.message || newAnnouncement.body || '',
+          // Optional flags
+          sendEmail: !!newAnnouncement.sendEmail
         });
-        this.showCreate = false;
-        this.fetchAnnouncements(); // Refresh the list
+
+        if (res && res.success) {
+          this.showCreate = false;
+          // List updates instantly via ADD_ANNOUNCEMENT commit.
+          // Optionally re-fetch to sync with server shape:
+          // await this.fetchAnnouncements();
+        } else {
+          const msg = (res && res.message) ? res.message : 'Failed to create announcement';
+          if (this.$notify) this.$notify({ type: 'error', title: 'Error', text: msg });
+        }
       } catch (error) {
-        console.error("Failed to create announcement:", error);
+        if (this.$notify) this.$notify({ type: 'error', title: 'Error', text: 'Failed to create announcement' });
       } finally {
         this.createLoading = false;
       }
+    },
+    isActive(a) {
+      // Determine active/published state with common keys
+      const val = a.is_active ?? a.isActive ?? a.active ?? null;
+      if (val === null || typeof val === 'undefined') return true; // default to active if not provided
+      if (typeof val === 'string') return val === '1' || val.toLowerCase() === 'true';
+      return !!val;
     },
     formatDate(dateStr) {
       if (!dateStr) return '';
       try {
         const date = new Date(dateStr);
-        if (isNaN(date.getTime())) {
-          return dateStr;
-        }
+        if (isNaN(date.getTime())) return dateStr;
         return date.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'short',
@@ -169,7 +195,7 @@ export default {
           hour: '2-digit',
           minute: '2-digit'
         });
-      } catch (e) {
+      } catch {
         return dateStr;
       }
     }
@@ -195,24 +221,18 @@ export default {
 
 @keyframes fadeIn {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0%   { transform: scale(1);   }
+  50%  { transform: scale(1.05);}
+  100% { transform: scale(1);   }
 }
 
 .card {
@@ -225,20 +245,13 @@ export default {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-.border-success {
-  border-color: #28a745;
-}
-
-.border-warning {
-  border-color: #ffc107;
-}
+.border-success { border-color: #28a745; }
+.border-warning { border-color: #ffc107; }
 
 .fas {
   font-size: 1.1rem;
   vertical-align: middle;
 }
 
-.text-muted {
-  color: #6c757d !important;
-}
+.text-muted { color: #6c757d !important; }
 </style>

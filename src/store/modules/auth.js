@@ -12,9 +12,9 @@ export default {
   mutations: {
     SET_AUTH_DATA(state, { token, refreshToken, user, expiresIn }) {
       state.token = token;
-      state.refreshToken = refreshToken;
-      state.user = user;
-      state.expiresIn = expiresIn;
+      state.refreshToken = refreshToken || null;
+      state.user = user || null;
+      state.expiresIn = expiresIn || null;
     },
     LOGOUT(state) {
       state.token = null;
@@ -31,11 +31,15 @@ export default {
         const token = data.token || data.data?.token;
         const user = data.user || data.data?.user;
         const expiresIn = data.expiresIn || 3600;
-        if (!token || !user) throw new Error('Invalid authentication data received');
+
+        if (!token || !user) {
+          throw new Error('Invalid authentication data received');
+        }
 
         commit('SET_AUTH_DATA', { token, refreshToken: null, user, expiresIn });
         authService.setToken(token);
         authService.setUser(user);
+
         return { success: true, user };
       } catch (error) {
         const message = error.response?.data?.message || error.message || 'Login failed';
@@ -46,17 +50,20 @@ export default {
     async register({ commit }, userData) {
       try {
         const response = await api.post('/register', userData);
-        if (response.data?.token) {
+        const data = response.data || {};
+
+        if (data.token && data.user) {
           commit('SET_AUTH_DATA', {
-            token: response.data.token,
-            refreshToken: response.data.refreshToken || null,
-            user: response.data.user,
-            expiresIn: response.data.expiresIn || 3600
+            token: data.token,
+            refreshToken: data.refreshToken || null,
+            user: data.user,
+            expiresIn: data.expiresIn || 3600
           });
-          authService.setToken(response.data.token);
-          authService.setUser(response.data.user);
+          authService.setToken(data.token);
+          authService.setUser(data.user);
         }
-        return { success: true, user: response.data.user, token: response.data.token };
+
+        return { success: true, user: data.user, token: data.token };
       } catch (error) {
         let message = 'Registration failed';
         if (error.response) {
@@ -81,11 +88,19 @@ export default {
           });
           authService.setUser(res.data.user);
         }
-      } catch (_) {}
+      } catch (e) {
+        // Not authenticated or session expired; keep current state
+        // Optional: console.warn('fetchMe failed', e);
+      }
     },
 
     async logout({ commit }) {
-      try { await api.post('/logout'); } catch (_) {}
+      try {
+        await api.post('/logout');
+      } catch (e) {
+        // Ignore network/API errors on logout to allow client-side logout
+        // Optional: console.warn('Logout request failed', e);
+      }
       authService.logout();
       commit('LOGOUT');
     },

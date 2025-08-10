@@ -10,22 +10,22 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Start Date</label>
-              <input 
-                type="date" 
-                v-model="newRequest.startDate" 
-                required 
-                :min="today" 
+              <input
+                type="date"
+                v-model="newRequest.startDate"
+                required
+                :min="today"
                 class="form-control"
                 @change="validateDates"
               >
             </div>
             <div class="col-md-6">
               <label class="form-label">End Date</label>
-              <input 
-                type="date" 
-                v-model="newRequest.endDate" 
-                required 
-                :min="newRequest.startDate || today" 
+              <input
+                type="date"
+                v-model="newRequest.endDate"
+                required
+                :min="newRequest.startDate || today"
                 class="form-control"
                 @change="validateDates"
               >
@@ -41,17 +41,17 @@
             </div>
             <div class="col-12">
               <label class="form-label">Reason</label>
-              <textarea 
-                v-model="newRequest.reason" 
-                required 
-                class="form-control" 
+              <textarea
+                v-model="newRequest.reason"
+                required
+                class="form-control"
                 rows="3"
                 placeholder="Please provide details for your leave request"
               ></textarea>
             </div>
             <div class="col-12">
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 class="btn btn-primary"
                 :disabled="loading"
               >
@@ -102,16 +102,16 @@
       </div>
     </div>
 
-    <!-- HR/Admin View: Approve/Reject Requests -->
+    <!-- HR/Admin/Manager View: Approve/Reject Requests -->
     <div v-if="isHR">
       <div class="card p-4 mb-4 hr-pending">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h3 class="h4 mb-0">Pending Approval</h3>
           <div class="input-group" style="width: 250px;">
-            <input 
-              type="text" 
-              v-model="searchQuery" 
-              class="form-control" 
+            <input
+              type="text"
+              v-model="searchQuery"
+              class="form-control"
               placeholder="Search employee..."
             >
             <button class="btn btn-outline-secondary" type="button">
@@ -119,7 +119,7 @@
             </button>
           </div>
         </div>
-        
+
         <div class="table-responsive">
           <table class="table table-hover">
             <thead class="table-primary">
@@ -155,20 +155,20 @@
                 <td>{{ truncateText(req.reason, 30) }}</td>
                 <td>
                   <div class="d-flex gap-2">
-                    <button 
-                      @click="showDetailsModal(req)" 
+                    <button
+                      @click="showDetailsModal(req)"
                       class="btn btn-sm btn-outline-primary"
                     >
                       <i class="bi bi-eye"></i>
                     </button>
-                    <button 
-                      @click="updateRequestStatus(req.id, 'Approved')" 
+                    <button
+                      @click="updateRequestStatus(req.id, 'Approved')"
                       class="btn btn-sm btn-success"
                     >
                       Approve
                     </button>
-                    <button 
-                      @click="updateRequestStatus(req.id, 'Rejected')" 
+                    <button
+                      @click="updateRequestStatus(req.id, 'Rejected')"
                       class="btn btn-sm btn-danger"
                     >
                       Reject
@@ -202,16 +202,18 @@
               <option value="Vacation">Vacation</option>
               <option value="Sick">Sick</option>
               <option value="Personal">Personal</option>
+              <option value="Other">Other</option>
             </select>
           </div>
-          <button 
-            @click="exportLeaveReport" 
+          <button
+            @click="exportLeaveReport"
             class="btn btn-outline-primary"
+            :disabled="filteredLeaveRequests.length === 0"
           >
             <i class="bi bi-download me-2"></i> Export
           </button>
         </div>
-        
+
         <div class="table-responsive">
           <table class="table table-hover">
             <thead class="table-primary">
@@ -240,8 +242,8 @@
                   </span>
                 </td>
                 <td>
-                  <button 
-                    @click="showDetailsModal(req)" 
+                  <button
+                    @click="showDetailsModal(req)"
                     class="btn btn-sm btn-outline-primary"
                   >
                     View
@@ -266,10 +268,10 @@
                 &laquo;
               </button>
             </li>
-            <li 
-              v-for="page in totalPages" 
-              :key="page" 
-              class="page-item" 
+            <li
+              v-for="page in totalPages"
+              :key="page"
+              class="page-item"
               :class="{ active: currentPage === page }"
             >
               <button class="page-link" @click="goToPage(page)">{{ page }}</button>
@@ -290,9 +292,9 @@
         <div class="modal-content">
           <div class="modal-header bg-primary text-white">
             <h5 class="modal-title">Leave Request Details</h5>
-            <button 
-              type="button" 
-              class="btn-close btn-close-white" 
+            <button
+              type="button"
+              class="btn-close btn-close-white"
               data-bs-dismiss="modal"
               aria-label="Close"
             ></button>
@@ -315,20 +317,21 @@
               <div class="col-md-6">
                 <h6 class="text-muted">Leave Details</h6>
                 <div class="mb-2">
-                  <span class="fw-bold">Type:</span> {{ selectedRequest.type }}
+                  <span class="fw-bold">Type:</span>
+                  {{ selectedRequest.type }}
                 </div>
                 <div class="mb-2">
-                  <span class="fw-bold">Status:</span> 
+                  <span class="fw-bold">Status:</span>
                   <span class="badge" :class="statusClass(selectedRequest)">
                     {{ selectedRequest.status }}
                   </span>
                 </div>
                 <div class="mb-2">
-                  <span class="fw-bold">Duration:</span> 
+                  <span class="fw-bold">Duration:</span>
                   {{ calculateDays(selectedRequest.startDate, selectedRequest.endDate) }} days
                 </div>
                 <div>
-                  <span class="fw-bold">Submitted:</span> 
+                  <span class="fw-bold">Submitted:</span>
                   {{ formatDateTime(selectedRequest.createdAt) }}
                 </div>
               </div>
@@ -342,11 +345,11 @@
                   </div>
                   <div class="card-body">
                     <div class="mb-2">
-                      <span class="fw-bold">Start Date:</span> 
+                      <span class="fw-bold">Start Date:</span>
                       {{ formatDate(selectedRequest.startDate) }}
                     </div>
                     <div>
-                      <span class="fw-bold">End Date:</span> 
+                      <span class="fw-bold">End Date:</span>
                       {{ formatDate(selectedRequest.endDate) }}
                     </div>
                   </div>
@@ -359,22 +362,22 @@
                   </div>
                   <div class="card-body">
                     <div v-if="selectedRequest.status !== 'Pending'" class="mb-2">
-                      <span class="fw-bold">Status:</span> 
+                      <span class="fw-bold">Status:</span>
                       {{ selectedRequest.status }} by {{ selectedRequest.approvedBy || 'HR' }}
                     </div>
                     <div v-if="selectedRequest.status !== 'Pending'">
-                      <span class="fw-bold">Date:</span> 
+                      <span class="fw-bold">Date:</span>
                       {{ formatDateTime(selectedRequest.updatedAt) }}
                     </div>
                     <div v-if="selectedRequest.status === 'Pending'" class="d-flex gap-2">
-                      <button 
-                        @click="updateRequestStatus(selectedRequest.id, 'Approved')" 
+                      <button
+                        @click="updateRequestStatus(selectedRequest.id, 'Approved')"
                         class="btn btn-success"
                       >
                         Approve
                       </button>
-                      <button 
-                        @click="updateRequestStatus(selectedRequest.id, 'Rejected')" 
+                      <button
+                        @click="updateRequestStatus(selectedRequest.id, 'Rejected')"
                         class="btn btn-danger"
                       >
                         Reject
@@ -416,19 +419,38 @@
     </div>
 
     <!-- Toast Notification -->
-    <AppNotificationToast 
-      :show="showToast" 
-      :message="toastMessage" 
-      :type="toastType" 
+    <AppNotificationToast
+      :show="showToast"
+      :message="toastMessage"
+      :type="toastType"
       @close="showToast = false"
     />
   </div>
 </template>
 
 <script>
-import axios from 'axios';
 import { Modal } from 'bootstrap';
 import AppNotificationToast from '../announcements/AppNotificationToast.vue';
+
+function normalizeLeave(raw) {
+  const startDate = raw.start_date || raw.startDate || raw.start || raw.from_date || raw.fromDate || raw.from || null;
+  const endDate = raw.end_date || raw.endDate || raw.end || raw.to_date || raw.toDate || raw.to || null;
+  return {
+    id: raw.id || raw.leaveId || raw._id || Math.random().toString(36).slice(2),
+    startDate,
+    endDate,
+    type: raw.type || raw.leave_type || raw.category || 'Vacation',
+    reason: raw.reason || raw.description || '',
+    status: raw.status || 'Pending',
+    employeeName: raw.employeeName || raw.employee_name || raw.user?.name || raw.name || 'Unknown',
+    employeeEmail: raw.employeeEmail || raw.employee_email || raw.user?.email || raw.email || '',
+    employeeDept: raw.employeeDept || raw.employee_dept || raw.user?.department || raw.department || '',
+    approvedBy: raw.approved_by || raw.approvedBy || '',
+    notes: raw.notes || '',
+    createdAt: raw.created_at || raw.createdAt || null,
+    updatedAt: raw.updated_at || raw.updatedAt || null
+  };
+}
 
 export default {
   name: "AppLeaveRequestForm",
@@ -436,23 +458,23 @@ export default {
   props: {
     userRole: {
       type: String,
-      required: true,
+      required: true
     },
     userName: {
       type: String,
       required: false,
-      default: "Employee",
+      default: "Employee"
     },
     userDept: {
       type: String,
       required: false,
-      default: "",
+      default: ""
     },
     userEmail: {
       type: String,
       required: false,
-      default: "",
-    },
+      default: ""
+    }
   },
   data() {
     const today = new Date().toISOString().split('T')[0];
@@ -466,7 +488,7 @@ export default {
         startDate: today,
         endDate: today,
         type: 'Vacation',
-        reason: '',
+        reason: ''
       },
       leaveRequests: [],
       selectedRequest: null,
@@ -481,50 +503,59 @@ export default {
   },
   computed: {
     isHR() {
-      return this.userRole === "HR" || this.userRole === "Admin";
+      // HR/Admin/Manager can approve
+      return this.userRole === "HR" || this.userRole === "Admin" || this.userRole === "Manager";
     },
     isEmployee() {
       return !this.isHR;
     },
+    currentUser() {
+      return this.$store.getters['auth/currentUser'] || this.$store.state.auth.user || {};
+    },
+    effectiveEmail() {
+      // prefer prop, fallback to store user email
+      return this.userEmail || this.currentUser.email || '';
+    },
     employeeRequests() {
-      return this.leaveRequests.filter(req => req.employeeEmail === this.userEmail);
+      // filter by current user's email
+      return this.leaveRequests.filter(req => (req.employeeEmail || '').toLowerCase() === (this.effectiveEmail || '').toLowerCase());
     },
     pendingRequests() {
-      return this.leaveRequests.filter(req => req.status === "Pending");
+      return this.leaveRequests.filter(req => (req.status || '').toLowerCase() === "pending");
     },
     filteredPendingRequests() {
-      return this.pendingRequests.filter(req => 
-        req.employeeName.toLowerCase().includes(this.searchQuery.toLowerCase())
+      return this.pendingRequests.filter(req =>
+        (req.employeeName || '').toLowerCase().includes(this.searchQuery.toLowerCase())
       );
     },
     filteredLeaveRequests() {
-      let filtered = this.leaveRequests;
-      
+      let filtered = [...this.leaveRequests];
+
       if (this.statusFilter !== 'all') {
         filtered = filtered.filter(req => req.status === this.statusFilter);
       }
-      
+
       if (this.typeFilter !== 'all') {
         filtered = filtered.filter(req => req.type === this.typeFilter);
       }
-      
+
       return filtered.slice(
         (this.currentPage - 1) * this.perPage,
         this.currentPage * this.perPage
       );
     },
     totalPages() {
-      let filtered = this.leaveRequests;
-      
+      let filtered = [...this.leaveRequests];
+
       if (this.statusFilter !== 'all') {
         filtered = filtered.filter(req => req.status === this.statusFilter);
       }
-      
+
       if (this.typeFilter !== 'all') {
         filtered = filtered.filter(req => req.type === this.typeFilter);
       }
-      
-      return Math.ceil(filtered.length / this.perPage);
+
+      return Math.max(1, Math.ceil(filtered.length / this.perPage));
     }
   },
   watch: {
@@ -542,16 +573,22 @@ export default {
   methods: {
     async fetchLeaveRequests() {
       try {
-        const response = await axios.get('/api/leave-requests', {
-          params: {
-            employee: this.isEmployee ? this.userEmail : null
-          }
-        });
-        this.leaveRequests = response.data.data;
-        this.totalRecords = response.data.meta?.total || this.leaveRequests.length;
+        let response;
+        if (this.isEmployee) {
+          response = await this.$axios.get('/leave/my');
+        } else {
+          // HR/Admin/Manager can see all
+          response = await this.$axios.get('/list-leaves');
+        }
+
+        const payload = response?.data?.data ?? response?.data ?? [];
+        const list = Array.isArray(payload) ? payload : [];
+        this.leaveRequests = list.map(normalizeLeave);
+        this.totalRecords = this.leaveRequests.length;
       } catch (error) {
-        console.error('Error fetching leave requests:', error);
-        this.showNotification('Failed to fetch leave requests', 'error');
+        this.showNotification(error?.response?.data?.message || 'Failed to fetch leave requests', 'error');
+        this.leaveRequests = [];
+        this.totalRecords = 0;
       }
     },
     validateDates() {
@@ -567,24 +604,34 @@ export default {
         this.showNotification('Please fill all required fields', 'error');
         return;
       }
+      if (this.newRequest.endDate < this.newRequest.startDate) {
+        this.showNotification('End date cannot be before start date', 'error');
+        return;
+      }
 
       this.loading = true;
       try {
         const payload = {
-          ...this.newRequest,
-          employeeName: this.userName,
-          employeeEmail: this.userEmail,
-          employeeDept: this.userDept,
-          status: 'Pending'
+          startDate: this.newRequest.startDate,
+          endDate: this.newRequest.endDate,
+          type: this.newRequest.type,
+          reason: this.newRequest.reason
         };
-
-        const response = await axios.post('/api/leave-requests', payload);
-        this.leaveRequests.unshift(response.data.data);
+        const res = await this.$axios.post('/leave/request', payload);
+        const createdRaw = res?.data?.data ?? res?.data ?? null;
+        const created = createdRaw ? normalizeLeave(createdRaw) : {
+          id: Math.random().toString(36).slice(2),
+          ...payload,
+          status: 'Pending',
+          employeeName: this.userName || this.currentUser.name || 'You',
+          employeeEmail: this.effectiveEmail,
+          employeeDept: this.userDept || this.currentUser.department || ''
+        };
+        this.leaveRequests.unshift(created);
         this.resetForm();
         this.showNotification('Leave request submitted successfully');
       } catch (error) {
-        console.error('Error submitting request:', error);
-        this.showNotification(error.response?.data?.message || 'Submission failed', 'error');
+        this.showNotification(error?.response?.data?.message || 'Submission failed', 'error');
       } finally {
         this.loading = false;
       }
@@ -594,26 +641,29 @@ export default {
         startDate: this.today,
         endDate: this.today,
         type: 'Vacation',
-        reason: '',
+        reason: ''
       };
     },
     async updateRequestStatus(id, status) {
       try {
-        const response = await axios.put(`/api/leave-requests/${id}/status`, {
-          status,
-          notes: status === 'Rejected' ? 'Please contact HR for details' : null
-        });
+        const res = await this.$axios.put(`/leave/status/${id}`, { status });
+        const updatedRaw = res?.data?.data ?? res?.data ?? null;
+        const updated = updatedRaw ? normalizeLeave(updatedRaw) : null;
 
         const index = this.leaveRequests.findIndex(req => req.id === id);
         if (index !== -1) {
-          this.leaveRequests[index] = response.data.data;
+          if (updated) {
+            this.leaveRequests.splice(index, 1, updated);
+          } else {
+            this.leaveRequests[index].status = status;
+            this.leaveRequests[index].updatedAt = new Date().toISOString();
+          }
         }
 
         this.detailsModal.hide();
         this.showNotification(`Request ${status.toLowerCase()} successfully`);
       } catch (error) {
-        console.error('Error updating status:', error);
-        this.showNotification(error.response?.data?.message || 'Update failed', 'error');
+        this.showNotification(error?.response?.data?.message || 'Update failed', 'error');
       }
     },
     showDetailsModal(request) {
@@ -621,51 +671,77 @@ export default {
       this.detailsModal.show();
     },
     statusClass(request) {
-      switch (request.status) {
-        case 'Approved': return 'bg-success';
-        case 'Rejected': return 'bg-danger';
-        default: return 'bg-warning';
+      switch ((request.status || '').toLowerCase()) {
+        case 'approved': return 'bg-success';
+        case 'rejected': return 'bg-danger';
+        case 'pending': return 'bg-warning';
+        default: return 'bg-secondary';
       }
     },
     formatDate(dateStr) {
-      return new Date(dateStr).toLocaleDateString();
+      if (!dateStr) return '-';
+      try {
+        return new Date(dateStr).toLocaleDateString();
+      } catch {
+        return dateStr;
+      }
     },
     formatDateTime(dateStr) {
-      return new Date(dateStr).toLocaleString();
+      if (!dateStr) return '-';
+      try {
+        return new Date(dateStr).toLocaleString();
+      } catch {
+        return dateStr;
+      }
     },
     calculateDays(startDate, endDate) {
+      if (!startDate || !endDate) return '-';
       const start = new Date(startDate);
       const end = new Date(endDate);
       const diff = end.getTime() - start.getTime();
-      return Math.ceil(diff / (1000 * 3600 * 24)) + 1; // inclusive
+      const days = Math.ceil(diff / (1000 * 3600 * 24)) + 1;
+      return isNaN(days) ? '-' : days;
     },
     getInitials(name) {
-      return name.split(' ').map(n => n[0]).join('').toUpperCase();
+      return (name || '').split(' ').map(n => n[0]).join('').toUpperCase();
     },
     truncateText(text, length) {
+      if (!text) return '';
       return text.length > length ? text.substring(0, length) + '...' : text;
     },
     async exportLeaveReport() {
       try {
-        const params = {
-          status: this.statusFilter !== 'all' ? this.statusFilter : null,
-          type: this.typeFilter !== 'all' ? this.typeFilter : null
-        };
+        if (this.filteredLeaveRequests.length === 0) {
+          this.showNotification('No data to export', 'warning');
+          return;
+        }
 
-        const response = await axios.get('/api/leave-requests/export', {
-          params,
-          responseType: 'blob'
-        });
+        const headers = ['Employee', 'Type', 'Start Date', 'End Date', 'Days', 'Status'];
+        const rows = this.filteredLeaveRequests.map(req => ([
+          req.employeeName,
+          req.type,
+          this.formatDate(req.startDate),
+          this.formatDate(req.endDate),
+          this.calculateDays(req.startDate, req.endDate),
+          req.status
+        ]));
 
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const csvContent = [
+          headers.join(','),
+          ...rows.map(r => r.join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `leave_report_${new Date().toISOString()}.xlsx`);
+        link.setAttribute('download', `leave_report_${new Date().toISOString().slice(0,10)}.csv`);
         document.body.appendChild(link);
         link.click();
-        this.showNotification('Export started successfully');
-      } catch (error) {
-        console.error('Export error:', error);
+        document.body.removeChild(link);
+
+        this.showNotification('Export completed');
+      } catch (_) {
         this.showNotification('Export failed', 'error');
       }
     },

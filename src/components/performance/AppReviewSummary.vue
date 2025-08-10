@@ -7,26 +7,26 @@
           Performance Review Summary
         </h1>
         <div class="d-flex gap-2">
-          <button 
-            @click="exportToExcel" 
+          <button
+            @click="exportToExcel"
             class="btn btn-outline-secondary"
             aria-label="Export to Excel"
             :disabled="reviews.length === 0 || loading"
           >
             <i class="bi bi-file-earmark-excel me-2" aria-hidden="true"></i> Export
           </button>
-          <button 
-            @click="refreshData" 
+          <button
+            @click="refreshData"
             class="btn btn-outline-primary"
             aria-label="Refresh data"
             :disabled="loading"
           >
-            <i class="bi bi-arrow-clockwise me-2" aria-hidden="true"></i> 
+            <i class="bi bi-arrow-clockwise me-2" aria-hidden="true"></i>
             <span v-if="!loading">Refresh</span>
             <span v-else>Refreshing...</span>
           </button>
-          <button 
-            @click="showTaskEvaluation = true" 
+          <button
+            @click="showTaskEvaluation = true"
             class="btn btn-success"
             aria-label="Evaluate Tasks"
           >
@@ -35,7 +35,6 @@
         </div>
       </div>
 
-      <!-- Loading State -->
       <div v-if="loading" class="text-center py-5">
         <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
@@ -43,7 +42,6 @@
         <p class="mt-2">Loading performance data...</p>
       </div>
 
-      <!-- Error State -->
       <div v-else-if="error" class="alert alert-danger">
         {{ error }}
         <button @click="loadInitialData" class="btn btn-sm btn-outline-danger ms-2">
@@ -51,10 +49,8 @@
         </button>
       </div>
 
-      <!-- Main Content -->
       <div v-else>
-        <!-- Task Evaluation Section (New Addition) -->
-        <div v-if="showTaskEvaluation" class="card mb-4">
+        <div v-if="showTaskEvaluation" class="card mb-4 task-evaluation-card">
           <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
             <h3 class="h5 mb-0">Task Evaluation</h3>
             <button @click="showTaskEvaluation = false" class="btn btn-sm btn-outline-light">
@@ -103,16 +99,16 @@
         <div class="row g-3 mb-4">
           <div class="col-md-4">
             <label for="employeeFilter" class="form-label">Employee</label>
-            <select 
+            <select
               id="employeeFilter"
-              v-model="employeeFilter" 
+              v-model="employeeFilter"
               class="form-select"
               aria-label="Filter by employee"
             >
               <option value="all">All Employees</option>
-              <option 
-                v-for="emp in employees" 
-                :key="emp.id" 
+              <option
+                v-for="emp in employees"
+                :key="emp.id"
                 :value="emp.id"
               >
                 {{ emp.name }} ({{ emp.department || 'N/A' }})
@@ -121,9 +117,9 @@
           </div>
           <div class="col-md-4">
             <label for="quarterFilter" class="form-label">Quarter</label>
-            <select 
+            <select
               id="quarterFilter"
-              v-model="quarterFilter" 
+              v-model="quarterFilter"
               class="form-select"
               aria-label="Filter by quarter"
             >
@@ -136,9 +132,9 @@
           </div>
           <div class="col-md-4">
             <label for="ratingFilter" class="form-label">Rating</label>
-            <select 
+            <select
               id="ratingFilter"
-              v-model="ratingFilter" 
+              v-model="ratingFilter"
               class="form-select"
               aria-label="Filter by rating"
             >
@@ -154,54 +150,35 @@
 
         <!-- Statistics Cards -->
         <div class="row mb-4">
-          <div class="col-md-3">
-            <div class="stat-card stat-card-1">
+          <div class="col-md-3" v-for="i in 4" :key="i">
+            <div :class="`stat-card stat-card-${i}`">
               <div class="d-flex justify-content-between">
-                <div>
+                <div v-if="i === 1">
                   <h6 class="text-muted">Total Reviews</h6>
                   <h4 class="mb-0">{{ stats.totalReviews }}</h4>
                 </div>
-                <div class="icon-gradient icon-gradient-1">
-                  <i class="bi bi-clipboard2-check" aria-hidden="true"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="stat-card stat-card-2">
-              <div class="d-flex justify-content-between">
-                <div>
+                <div v-else-if="i === 2">
                   <h6 class="text-muted">Avg. Rating</h6>
                   <h4 class="mb-0">{{ stats.avgRating.toFixed(1) }}★</h4>
                 </div>
-                <div class="icon-gradient icon-gradient-2">
-                  <i class="bi bi-star-fill" aria-hidden="true"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="stat-card stat-card-3">
-              <div class="d-flex justify-content-between">
-                <div>
+                <div v-else-if="i === 3">
                   <h6 class="text-muted">Top Performers</h6>
                   <h4 class="mb-0">{{ stats.topPerformers }}</h4>
                 </div>
-                <div class="icon-gradient icon-gradient-3">
-                  <i class="bi bi-award" aria-hidden="true"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="stat-card stat-card-4">
-              <div class="d-flex justify-content-between">
-                <div>
+                <div v-else>
                   <h6 class="text-muted">Needs Improvement</h6>
                   <h4 class="mb-0">{{ stats.needsImprovement }}</h4>
                 </div>
-                <div class="icon-gradient icon-gradient-4">
-                  <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                <div :class="`icon-gradient icon-gradient-${i}`">
+                  <i
+                    :class="[
+                      i === 1 ? 'bi bi-clipboard2-check' : '',
+                      i === 2 ? 'bi bi-star-fill' : '',
+                      i === 3 ? 'bi bi-award' : '',
+                      i === 4 ? 'bi bi-exclamation-triangle' : ''
+                    ]"
+                    aria-hidden="true"
+                  ></i>
                 </div>
               </div>
             </div>
@@ -235,9 +212,9 @@
                 </td>
                 <td>
                   <div class="rating-display">
-                    <span 
-                      v-for="n in 5" 
-                      :key="n" 
+                    <span
+                      v-for="n in 5"
+                      :key="n"
                       class="me-1"
                       :class="n <= review.rating ? 'text-warning' : 'text-muted'"
                       :aria-label="`${n <= review.rating ? 'Filled' : 'Empty'} star`"
@@ -256,15 +233,15 @@
                 </td>
                 <td>{{ formatDate(review.date) }}</td>
                 <td>
-                  <button 
-                    @click="viewDetails(review)" 
+                  <button
+                    @click="viewDetails(review)"
                     class="btn btn-sm btn-outline-primary"
                     aria-label="View review details"
                   >
                     <i class="bi bi-eye me-1" aria-hidden="true"></i> View
                   </button>
-                  <button 
-                    @click="editReview(review)" 
+                  <button
+                    @click="editReview(review)"
                     class="btn btn-sm btn-outline-warning ms-2"
                     aria-label="Edit review"
                   >
@@ -285,8 +262,8 @@
         <nav v-if="totalPages > 1" class="mt-4" aria-label="Reviews pagination">
           <ul class="pagination justify-content-center">
             <li class="page-item" :class="{ disabled: currentPage === 1 }">
-              <button 
-                class="page-link" 
+              <button
+                class="page-link"
                 @click="prevPage"
                 :disabled="currentPage === 1"
                 aria-label="Previous page"
@@ -294,14 +271,14 @@
                 &laquo;
               </button>
             </li>
-            <li 
-              v-for="page in totalPages" 
-              :key="page" 
-              class="page-item" 
+            <li
+              v-for="page in totalPages"
+              :key="page"
+              class="page-item"
               :class="{ active: currentPage === page }"
             >
-              <button 
-                class="page-link" 
+              <button
+                class="page-link"
                 @click="goToPage(page)"
                 :aria-label="`Go to page ${page}`"
                 :aria-current="currentPage === page ? 'page' : null"
@@ -310,8 +287,8 @@
               </button>
             </li>
             <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-              <button 
-                class="page-link" 
+              <button
+                class="page-link"
                 @click="nextPage"
                 :disabled="currentPage === totalPages"
                 aria-label="Next page"
@@ -325,11 +302,11 @@
     </div>
 
     <!-- Review Details Modal -->
-    <div 
-      class="modal fade" 
-      id="reviewModal" 
-      tabindex="-1" 
-      aria-labelledby="reviewModalLabel" 
+    <div
+      class="modal fade"
+      id="reviewModal"
+      tabindex="-1"
+      aria-labelledby="reviewModalLabel"
       aria-hidden="true"
       ref="reviewModal"
     >
@@ -339,9 +316,9 @@
             <h2 id="reviewModalLabel" class="modal-title h5">
               {{ isEditing ? 'Edit' : 'View' }} Performance Review
             </h2>
-            <button 
-              type="button" 
-              class="btn-close btn-close-white" 
+            <button
+              type="button"
+              class="btn-close btn-close-white"
               data-bs-dismiss="modal"
               aria-label="Close"
             ></button>
@@ -363,9 +340,9 @@
               <div class="col-md-6">
                 <h3 class="h6 text-muted">Performance Rating</h3>
                 <div class="rating-display mb-2">
-                  <span 
-                    v-for="n in 5" 
-                    :key="n" 
+                  <span
+                    v-for="n in 5"
+                    :key="n"
                     class="me-1"
                     :class="n <= selectedReview.rating ? 'text-warning' : 'text-muted'"
                     :aria-label="`${n <= selectedReview.rating ? 'Filled' : 'Empty'} star`"
@@ -384,23 +361,23 @@
 
             <div class="mb-4">
               <label class="form-label">Feedback</label>
-              <textarea 
-                v-model="selectedReview.feedback" 
-                class="form-control" 
+              <textarea
+                v-model="selectedReview.feedback"
+                class="form-control"
                 rows="3"
                 :readonly="!isEditing"
               ></textarea>
             </div>
 
             <div v-if="isEditing" class="d-flex justify-content-end gap-2">
-              <button 
-                @click="cancelEdit" 
+              <button
+                @click="cancelEdit"
                 class="btn btn-outline-secondary"
               >
                 Cancel
               </button>
-              <button 
-                @click="saveReview" 
+              <button
+                @click="saveReview"
                 class="btn btn-primary"
               >
                 Save Changes
@@ -415,10 +392,10 @@
     </div>
 
     <!-- Toast Notification -->
-    <AppNotificationToast 
-      :show="showToast" 
-      :message="toastMessage" 
-      :type="toastType" 
+    <AppNotificationToast
+      :show="showToast"
+      :message="toastMessage"
+      :type="toastType"
       @close="showToast = false"
     />
   </div>
@@ -470,21 +447,19 @@ export default {
       error: state => state.error
     }),
     ...mapGetters('performance', ['getReviewsByUser']),
-    
+
     reviews() {
-      return this.performanceReviews;
+      return Array.isArray(this.performanceReviews) ? this.performanceReviews : [];
     },
-    
+
     filteredReviews() {
       let filtered = [...this.reviews];
-      
-      // Apply filters
+
       if (this.employeeFilter !== "all") {
         filtered = filtered.filter(r => String(r.userId) === String(this.employeeFilter));
       }
-      
+
       if (this.quarterFilter !== "all") {
-        // Extract quarter from date (simplified example)
         filtered = filtered.filter(r => {
           const date = new Date(r.date);
           const month = date.getMonth() + 1;
@@ -495,27 +470,26 @@ export default {
           return true;
         });
       }
-      
+
       if (this.ratingFilter !== "all") {
         filtered = filtered.filter(r => String(r.rating) === String(this.ratingFilter));
       }
-      
+
       this.updateStats(filtered);
-      
-      // Pagination
+
       const start = (this.currentPage - 1) * this.perPage;
       const end = this.currentPage * this.perPage;
-      
+
       return filtered.slice(start, end);
     },
-    
+
     totalPages() {
       let filtered = [...this.reviews];
-      
+
       if (this.employeeFilter !== "all") {
         filtered = filtered.filter(r => String(r.userId) === String(this.employeeFilter));
       }
-      
+
       if (this.quarterFilter !== "all") {
         filtered = filtered.filter(r => {
           const date = new Date(r.date);
@@ -527,11 +501,11 @@ export default {
           return true;
         });
       }
-      
+
       if (this.ratingFilter !== "all") {
         filtered = filtered.filter(r => String(r.rating) === String(this.ratingFilter));
       }
-      
+
       return Math.ceil(filtered.length / this.perPage) || 1;
     }
   },
@@ -542,62 +516,56 @@ export default {
       'updateReview',
       'deleteReview'
     ]),
-    
+
     async loadInitialData() {
       try {
-        // Reset filters to avoid empty results
         this.employeeFilter = "all";
         this.quarterFilter = "all";
         this.ratingFilter = "all";
-        
-        // Fetch all data in parallel
+
         const [reviewsResponse, employeesResponse, tasksResponse] = await Promise.all([
           this.fetchReviews(),
-          this.$axios.get('/employees'),
-          this.$axios.get('/tasks')
+          this.$axios.get('/list-users'),
+          this.$axios.get('/list-task')
         ]);
-        
-        // Handle reviews response
+
         if (!reviewsResponse?.success) {
           throw new Error(reviewsResponse?.message || 'Failed to fetch reviews');
         }
-        
-        // Set employees and tasks
-        this.employees = employeesResponse.data?.data || employeesResponse.data || [];
-        this.tasks = tasksResponse.data?.data || tasksResponse.data || [];
-        
-        // Set default employee for task evaluation
-        if (this.employees.length > 0) {
+
+        const employeesPayload = employeesResponse.data?.data ?? employeesResponse.data ?? [];
+        const tasksPayload = tasksResponse.data?.data ?? tasksResponse.data ?? [];
+
+        this.employees = Array.isArray(employeesPayload) ? employeesPayload : [];
+        this.tasks = Array.isArray(tasksPayload) ? tasksPayload : [];
+
+        if (this.employees.length > 0 && !this.taskEvaluation.employeeId) {
           this.taskEvaluation.employeeId = this.employees[0].id;
         }
-        
-        // Set default task for task evaluation
-        if (this.tasks.length > 0) {
+        if (this.tasks.length > 0 && !this.taskEvaluation.taskId) {
           this.taskEvaluation.taskId = this.tasks[0].id;
         }
-        
       } catch (error) {
-        console.error('Initial data loading error:', error);
         const errorMsg = error.response?.data?.message || error.message || 'Failed to load initial data';
         this.showNotification(errorMsg, 'error');
       }
     },
-    
+
     employeeName(id) {
       const emp = this.employees.find(e => String(e.id) === String(id));
       return emp ? emp.name : "Unknown Employee";
     },
-    
+
     employeeDept(id) {
       const emp = this.employees.find(e => String(e.id) === String(id));
-      return emp ? emp.department : "N/A";
+      return emp ? (emp.department || 'N/A') : "N/A";
     },
-    
+
     getInitials(name) {
       if (!name) return '';
       return name.split(' ').map(n => n[0]).join('').toUpperCase();
     },
-    
+
     ratingText(rating) {
       const texts = [
         "Needs Improvement",
@@ -608,7 +576,7 @@ export default {
       ];
       return texts[rating - 1] || "Not rated";
     },
-    
+
     ratingClass(rating) {
       const classes = [
         "bg-danger",
@@ -619,7 +587,7 @@ export default {
       ];
       return classes[rating - 1] || "bg-secondary";
     },
-    
+
     formatDate(dateStr) {
       if (!dateStr) return "N/A";
       try {
@@ -629,7 +597,7 @@ export default {
         return "Invalid Date";
       }
     },
-    
+
     viewDetails(review) {
       this.selectedReview = { ...review };
       this.isEditing = false;
@@ -637,7 +605,7 @@ export default {
         this.reviewModal.show();
       });
     },
-    
+
     editReview(review) {
       this.selectedReview = { ...review };
       this.originalReview = { ...review };
@@ -646,13 +614,13 @@ export default {
         this.reviewModal.show();
       });
     },
-    
+
     cancelEdit() {
       this.selectedReview = { ...this.originalReview };
       this.isEditing = false;
       this.reviewModal.hide();
     },
-    
+
     async saveReview() {
       try {
         const { id, ...reviewData } = this.selectedReview;
@@ -662,7 +630,7 @@ export default {
           'User Rating': reviewData.rating,
           'User Feedback': reviewData.feedback
         });
-        
+
         if (response.success) {
           this.showNotification('Review updated successfully');
           this.isEditing = false;
@@ -671,23 +639,22 @@ export default {
           throw new Error(response.message || 'Failed to update review');
         }
       } catch (error) {
-        console.error('Error updating review:', error);
         this.showNotification(error.message || 'Failed to update review', 'error');
       }
     },
-    
+
     async submitTaskEvaluation() {
       try {
         if (!this.taskEvaluation.employeeId || !this.taskEvaluation.taskId) {
           throw new Error('Please select both employee and task');
         }
-        
+
         const response = await this.addReview({
           'User ID': this.taskEvaluation.employeeId,
           'User Rating': this.taskEvaluation.rating,
           'User Feedback': this.taskEvaluation.feedback
         });
-        
+
         if (response.success) {
           this.showNotification('Task evaluation submitted successfully');
           this.showTaskEvaluation = false;
@@ -696,11 +663,10 @@ export default {
           throw new Error(response.message || 'Failed to submit evaluation');
         }
       } catch (error) {
-        console.error('Error submitting task evaluation:', error);
         this.showNotification(error.message || 'Failed to submit evaluation', 'error');
       }
     },
-    
+
     resetTaskEvaluation() {
       this.taskEvaluation = {
         employeeId: this.employees.length > 0 ? this.employees[0].id : null,
@@ -709,10 +675,10 @@ export default {
         feedback: ''
       };
     },
-    
+
     updateStats(reviews) {
       this.stats.totalReviews = reviews.length;
-      
+
       if (reviews.length > 0) {
         const totalRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
         this.stats.avgRating = totalRating / reviews.length;
@@ -724,34 +690,43 @@ export default {
         this.stats.needsImprovement = 0;
       }
     },
-    
+
     async exportToExcel() {
-      if (this.reviews.length === 0) {
+      if (!Array.isArray(this.reviews) || this.reviews.length === 0) {
         this.showNotification('No reviews to export', 'warning');
         return;
       }
-      
+
       try {
-        const response = await this.$axios.get('/performance-reviews/export', {
-          responseType: 'blob'
-        });
-        
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const headers = ['Employee', 'Department', 'Rating', 'Feedback', 'Date'];
+        const rows = this.reviews.map(r => ([
+          this.employeeName(r.userId),
+          this.employeeDept(r.userId),
+          r.rating ?? '',
+          (r.feedback || '').replace(/\n/g, ' '),
+          this.formatDate(r.date)
+        ]));
+
+        const csvContent = [
+          headers.join(','),
+          ...rows.map(r => r.map(v => String(v).includes(',') ? `"${String(v).replace(/"/g, '""')}"` : v).join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `performance-reviews-${new Date().toISOString().slice(0,10)}.xlsx`);
+        link.setAttribute('download', `performance-reviews-${new Date().toISOString().slice(0,10)}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
-        this.showNotification('Performance reviews exported successfully');
+
+        this.showNotification('Export completed');
       } catch (error) {
-        console.error('Export error:', error);
-        const errorMsg = error.response?.data?.message || 'Failed to export reviews';
-        this.showNotification(errorMsg, 'error');
+        this.showNotification('Failed to export reviews', 'error');
       }
     },
-    
+
     async refreshData() {
       try {
         const response = await this.fetchReviews();
@@ -762,26 +737,25 @@ export default {
           this.showNotification(errorMsg, 'error');
         }
       } catch (error) {
-        console.error('Refresh error:', error);
         const errorMsg = error.response?.data?.message || 'Failed to refresh data';
         this.showNotification(errorMsg, 'error');
       }
     },
-    
+
     prevPage() {
       if (this.currentPage > 1) this.currentPage--;
     },
-    
+
     nextPage() {
       if (this.currentPage < this.totalPages) this.currentPage++;
     },
-    
+
     goToPage(page) {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page;
       }
     },
-    
+
     showNotification(message, type = 'success') {
       this.toastMessage = message;
       this.toastType = type;
@@ -797,34 +771,23 @@ export default {
       this.reviewModal = new Modal(this.$refs.reviewModal);
       await this.loadInitialData();
     } catch (error) {
-      console.error('Component initialization error:', error);
       this.showNotification('Failed to initialize component', 'error');
     }
   },
   watch: {
     reviews() {
       this.updateStats(this.reviews);
-      // Reset to first page but ensure it's within valid range
       this.currentPage = Math.min(Math.max(1, this.currentPage), this.totalPages);
     },
-    employeeFilter() {
-      this.currentPage = 1;
-    },
-    quarterFilter() {
-      this.currentPage = 1;
-    },
-    ratingFilter() {
-      this.currentPage = 1;
-    },
-    '$route'() {
-      this.loadInitialData();
-    }
+    employeeFilter() { this.currentPage = 1; },
+    quarterFilter() { this.currentPage = 1; },
+    ratingFilter() { this.currentPage = 1; },
+    '$route'() { this.loadInitialData(); }
   }
 };
 </script>
 
 <style scoped>
-/* Your existing styles remain unchanged */
 .avatar {
   width: 36px;
   height: 36px;
@@ -864,12 +827,6 @@ export default {
   max-width: 250px;
 }
 
-.task-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-
 .rating-display {
   display: flex;
   align-items: center;
@@ -899,19 +856,9 @@ export default {
 .icon-gradient-4 { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
 
 @media (max-width: 768px) {
-  .truncate-text {
-    max-width: 150px;
-  }
-  
-  .stat-card {
-    padding: 0.75rem;
-  }
-  
-  .icon-gradient {
-    width: 32px;
-    height: 32px;
-    font-size: 0.9rem;
-  }
+  .truncate-text { max-width: 150px; }
+  .stat-card { padding: 0.75rem; }
+  .icon-gradient { width: 32px; height: 32px; font-size: 0.9rem; }
 }
 
 .page-item.active .page-link {
@@ -919,27 +866,12 @@ export default {
   border-color: #3a7bd5;
 }
 
-.page-link {
-  color: #3a7bd5;
-}
+.page-link { color: #3a7bd5; }
 
-.btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
+.btn:disabled { opacity: 0.65; cursor: not-allowed; }
 
-/* Loading spinner styles */
-.spinner-border {
-  width: 3rem;
-  height: 3rem;
-}
+.spinner-border { width: 3rem; height: 3rem; }
 
-/* Task evaluation card styles */
-.task-evaluation-card {
-  border-left: 4px solid #28a745;
-}
-
-.task-evaluation-card .card-header {
-  background-color: rgba(40, 167, 69, 0.1);
-}
+.task-evaluation-card { border-left: 4px solid #28a745; }
+.task-evaluation-card .card-header { background-color: rgba(40, 167, 69, 0.1); }
 </style>

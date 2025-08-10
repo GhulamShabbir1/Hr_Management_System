@@ -1,144 +1,130 @@
-import api from '@/services/api';
+// src/store/modules/announcements.js
+import api from '../../services/api';
+
+function normalizeAnnouncement(raw) {
+  const title = raw.title ?? raw.subject ?? 'Untitled';
+  const message = raw.message ?? raw.content ?? raw.body ?? raw.description ?? '';
+  return {
+    id: raw.id ?? raw.announcementId ?? raw._id ?? `tmp-${Date.now()}`,
+    title: String(title),
+    message: String(message),
+    content: String(message),
+    is_active: typeof raw.is_active !== 'undefined'
+      ? (String(raw.is_active) === '1' || String(raw.is_active).toLowerCase() === 'true')
+      : (raw.active ?? raw.isActive ?? true),
+    createdAt: raw.created_at ?? raw.createdAt ?? new Date().toISOString(),
+    createdBy: raw.created_by ?? raw.createdBy ?? raw.user?.name ?? 'System'
+  };
+}
 
 export default {
   namespaced: true,
+
   state: {
     announcements: [],
     loading: false,
     error: null
   },
+
   mutations: {
     SET_ANNOUNCEMENTS(state, announcements) {
-      state.announcements = announcements;
+      state.announcements = Array.isArray(announcements) ? announcements : [];
     },
     ADD_ANNOUNCEMENT(state, announcement) {
       state.announcements.unshift(announcement);
     },
     SET_LOADING(state, isLoading) {
-      state.loading = isLoading;
+      state.loading = !!isLoading;
     },
     SET_ERROR(state, error) {
-      state.error = error;
+      state.error = error || null;
     }
   },
+
   actions: {
     async fetchAnnouncements({ commit }) {
+      commit('SET_LOADING', true);
+      commit('SET_ERROR', null);
       try {
-        commit('SET_LOADING', true);
-        commit('SET_ERROR', null);
-        
-        const response = await api.get('/announcements');
-        
-        // Handle different API response structures
-        let announcements = [];
-        
-        if (response.data && Array.isArray(response.data)) {
-          // Case 1: Direct array response
-          announcements = response.data;
-        } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-          // Case 2: Wrapped in data property
-          announcements = response.data.data;
-        } else if (response.data && response.data.items && Array.isArray(response.data.items)) {
-          // Case 3: Alternative structure (items instead of data)
-          announcements = response.data.items;
-        } else {
-          console.error('Unexpected API response structure:', response.data);
-          throw new Error('Unexpected API response structure');
-        }
-
-        // Validate announcement structure
-        if (announcements.length > 0) {
-          const requiredKeys = ['id', 'title', 'content', 'createdAt'];
-          const sampleItem = announcements[0];
-          const missingKeys = requiredKeys.filter(key => !(key in sampleItem));
-          
-          if (missingKeys.length > 0) {
-            console.warn('Announcement items missing required fields:', missingKeys);
-            // Fill in missing fields with defaults if needed
-            announcements = announcements.map(item => ({
-              content: '',
-              createdAt: new Date().toISOString(),
-              ...item
-            }));
-          }
-        }
-
-        commit('SET_ANNOUNCEMENTS', announcements);
-      } catch (error) {
-        console.error('Error fetching announcements:', error);
-        
-        const errorMessage = error.response?.data?.message ||
-          error.response?.data?.error ||
-          error.message ||
-          'Failed to fetch announcements';
-        
-        commit('SET_ERROR', errorMessage);
-        throw error;
+        const res = await api.get('/announcements');
+        const payload = res?.data?.data ?? res?.data ?? [];
+        const list = Array.isArray(payload)
+          ? payload
+          : (Array.isArray(payload.items) ? payload.items : []);
+        commit('SET_ANNOUNCEMENTS', list.map(normalizeAnnouncement));
+        return { success: true };
+      } catch (e) {
+        const msg = e?.response?.data?.message || e.message || 'Failed to fetch announcements';
+        commit('SET_ERROR', msg);
+        commit('SET_ANNOUNCEMENTS', []);
+        return { success: false, message: msg };
       } finally {
         commit('SET_LOADING', false);
       }
     },
-    
-    async addAnnouncement({ commit }, announcement) {
-      try {
-        if (!announcement.title || !announcement.content) {
-          throw new Error('Title and content are required');
-        }
 
-        commit('SET_LOADING', true);
-        commit('SET_ERROR', null);
-        
-        const response = await api.post('/announcements', announcement);
-        
-        let newAnnouncement = null;
-        
-        if (response.data) {
-          // Handle different success response structures
-          newAnnouncement = response.data.data || response.data;
-          
-          if (!newAnnouncement.id) {
-            console.warn('Created announcement missing ID:', newAnnouncement);
-            // Generate a temporary ID if missing
-            newAnnouncement.id = `temp-${Date.now()}`;
-          }
-          
-          // Ensure required fields exist
-          newAnnouncement = {
-            content: '',
-            createdAt: new Date().toISOString(),
-            ...newAnnouncement
-          };
-          
-          commit('ADD_ANNOUNCEMENT', newAnnouncement);
-          return newAnnouncement;
-        }
-        
-        throw new Error('Invalid response structure');
-      } catch (error) {
-        console.error('Error adding announcement:', error);
-        
-        const errorMessage = error.response?.data?.message ||
-          error.response?.data?.error ||
-          error.message ||
-          'Failed to add announcement';
-        
-        commit('SET_ERROR', errorMessage);
-        throw error;
+    async addAnnouncement({ commit }, payload) {
+      // Accept aliases from various forms
+      const rawTitle   = payload?.title   ?? payload?.subject   ?? '';
+      const rawMessage = payload?.message ?? payload?.content   ?? payload?.body ?? payload?.description ?? '';
+
+      const title   = String(rawTitle).trim();
+      const message = String(rawMessage).trim();
+
+      // is_active may be boolean/number/string; normalize and also send both variants if needed
+      const isActiveBool = !!(payload?.is_active || payload?.active);
+      const is_active = isActiveBool ? 1 : 0;
+
+      if (!title || !message) {
+        const msg = 'Title and content/message are required';
+        return { success: false, message: msg };
+      }
+
+      commit('SET_LOADING', true);
+      commit('SET_ERROR', null);
+      try {
+        // Send both message and content to satisfy backend variants
+        const reqBody = {
+          title,
+          message,                // primary (backend requires this)
+          content: message,       // fallback if backend reads 'content'
+          is_active,              // numeric flag
+          active: isActiveBool    // boolean flag (extra, harmless)
+        };
+
+        const res = await api.post('/announcements', reqBody);
+        const createdRaw = res?.data?.data ?? res?.data ?? {};
+        const created = normalizeAnnouncement({
+          ...createdRaw,
+          title,
+          message,
+          is_active
+        });
+
+        commit('ADD_ANNOUNCEMENT', created);
+        return { success: true, data: created };
+      } catch (e) {
+        const apiMsg = e?.response?.data?.message;
+        const firstError =
+          (e?.response?.data?.errors && Object.values(e.response.data.errors)[0]?.[0]) || null;
+        const msg = firstError || apiMsg || e.message || 'Failed to create announcement';
+        commit('SET_ERROR', msg);
+        return { success: false, message: msg };
       } finally {
         commit('SET_LOADING', false);
       }
     }
   },
+
   getters: {
-    allAnnouncements: state => state.announcements,
-    isLoading: state => state.loading,
-    error: state => state.error,
-    // Additional useful getters
-    activeAnnouncements: state => state.announcements.filter(a => !a.isArchived),
-    recentAnnouncements: (state) => (limit = 5) => {
-      return [...state.announcements]
+    allAnnouncements: (state) => state.announcements,
+    isLoading: (state) => state.loading,
+    error: (state) => state.error,
+    activeAnnouncements: (state) =>
+      state.announcements.filter(a => a.is_active),
+    recentAnnouncements: (state) => (limit = 5) =>
+      [...state.announcements]
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, limit);
-    }
+        .slice(0, limit)
   }
 };
