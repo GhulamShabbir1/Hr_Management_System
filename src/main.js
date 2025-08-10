@@ -7,6 +7,7 @@ import store from './store';
 import { BootstrapVue, IconsPlugin } from 'bootstrap-vue';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-vue/dist/bootstrap-vue.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Custom styles
 import '@/assets/css/custom.css';
@@ -28,6 +29,9 @@ Vue.prototype.$notify = function (notification) {
 // Use BootstrapVue plugins
 Vue.use(BootstrapVue);
 Vue.use(IconsPlugin);
+
+// Inject axios instance globally
+Vue.prototype.$axios = api;
 
 // Vue config
 Vue.config.productionTip = false;
