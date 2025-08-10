@@ -1,28 +1,24 @@
 import api from './api';
 
 export default {
-  async submitReview(reviewData) {
-    const response = await api.post('/performance/reviews', reviewData);
-    return response.data;
+  async createReview(payload) {
+    const res = await api.post('/create-performance-review', payload);
+    return res.data;
   },
-
-  async getEmployeeReviews(employeeId) {
-    const response = await api.get(`/performance/reviews/employee/${employeeId}`);
-    return response.data;
+  async updateReview(id, payload) {
+    const res = await api.put(`/update-performance-review/${id}`, payload);
+    return res.data;
   },
-
-  async getPendingReviews(reviewerId) {
-    const response = await api.get(`/performance/reviews/pending/${reviewerId}`);
-    return response.data;
+  async deleteReview(id) {
+    const res = await api.post(`/delete-performance-review/${id}`);
+    return res.data;
   },
-
-  async getReviewTemplates() {
-    const response = await api.get('/performance/templates');
-    return response.data;
+  async showReview(id) {
+    const res = await api.get(`/show-performance-review/${id}`);
+    return res.data;
   },
-
-  async getKPIs(employeeId) {
-    const response = await api.get(`/performance/kpis/${employeeId}`);
-    return response.data;
+  async listReviews() {
+    const res = await api.get('/list-performance-review');
+    return res.data;
   }
 };
