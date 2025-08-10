@@ -1,26 +1,26 @@
 <template>
   <div class="task-evaluator-container animate__animated animate__fadeIn">
     <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="evaluator-title">
-      <i class="bi bi-check-circle me-2" aria-hidden="true"></i>
+      <h2 class="evaluator-title">
+        <i class="bi bi-check-circle me-2" aria-hidden="true"></i>
         Task Management & Evaluation
-    </h2>
+      </h2>
       <div class="d-flex gap-2">
-        <button 
-          @click="refreshTasks" 
+        <button
+          @click="refreshTasks"
           class="btn btn-sm btn-outline-secondary"
           :disabled="loading"
           aria-label="Refresh tasks"
         >
           <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i> Refresh
         </button>
-      <button 
-        @click="addNewTask" 
+        <button
+          @click="addNewTask"
           class="btn btn-sm btn-primary"
-        aria-label="Add new task"
-      >
-        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Add Task
-      </button>
+          aria-label="Add new task"
+        >
+          <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Add Task
+        </button>
       </div>
     </div>
 
@@ -108,12 +108,12 @@
       <div class="row mt-2">
         <div class="col-md-12">
           <label class="form-label">Search Tasks</label>
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            class="form-control" 
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="form-control"
             placeholder="Search tasks..."
-          >
+          />
         </div>
       </div>
     </div>
@@ -121,11 +121,11 @@
     <!-- Task List -->
     <div class="task-list-container" v-if="filteredTasks.length > 0">
       <div class="task-grid">
-        <div 
-        v-for="task in filteredTasks" 
-        :key="task.id" 
+        <div
+          v-for="(task, index) in filteredTasks"
+          :key="task.id || (task.title + '-' + index)"
           class="task-card"
-          :class="{ 
+          :class="{
             'completed-task': task.status === 'Completed',
             'high-priority': task.priority === 'High',
             'medium-priority': task.priority === 'Medium',
@@ -134,14 +134,14 @@
         >
           <div class="task-header">
             <div class="task-checkbox">
-            <input
-              type="checkbox"
-              :id="`task-${task.id}`"
-              :checked="task.status === 'Completed'"
-              @change="toggleStatus(task)"
+              <input
+                type="checkbox"
+                :id="`task-${task.id || index}`"
+                :checked="task.status === 'Completed'"
+                @change="toggleStatus(task)"
                 class="form-check-input"
-              aria-label="Toggle task completion status"
-              >
+                aria-label="Toggle task completion status"
+              />
             </div>
             <div class="task-title">
               <h5>{{ task.title || task.name }}</h5>
@@ -156,25 +156,25 @@
                   {{ getEmployeeName(task.employeeId) }}
                 </span>
               </div>
-          </div>
-          <div class="task-actions">
-            <button 
-                @click="editTask(task)" 
+            </div>
+            <div class="task-actions">
+              <button
+                @click="editTask(task)"
                 class="btn btn-sm btn-outline-primary"
                 title="Edit task"
               >
                 <i class="bi bi-pencil"></i>
-            </button>
-            <button 
-              @click="removeTask(task.id)" 
+              </button>
+              <button
+                @click="removeTask(task.id)"
                 class="btn btn-sm btn-outline-danger"
                 title="Delete task"
-            >
+              >
                 <i class="bi bi-trash"></i>
-            </button>
+              </button>
             </div>
           </div>
-          
+
           <div class="task-body">
             <p class="task-description">{{ task.description || 'No description provided' }}</p>
             <div class="task-details">
@@ -191,7 +191,7 @@
         </div>
       </div>
     </div>
-    
+
     <div v-else class="empty-state text-center py-4">
       <i class="bi bi-check2-circle fs-1 text-muted" aria-hidden="true"></i>
       <p class="mt-2">No tasks available. Add your first task!</p>
@@ -205,26 +205,26 @@
             <h2 id="taskModalLabel" class="modal-title h5">
               {{ editMode ? 'Edit Task' : 'Add New Task' }}
             </h2>
-            <button 
-              type="button" 
-              class="btn-close btn-close-white" 
-              data-bs-dismiss="modal" 
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
               aria-label="Close"
             ></button>
           </div>
           <div class="modal-body">
             <div class="row">
               <div class="col-md-8">
-            <div class="mb-3">
+                <div class="mb-3">
                   <label for="newTaskTitle" class="form-label">Task Title *</label>
-              <input 
-                type="text" 
-                class="form-control" 
-                    id="newTaskTitle" 
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="newTaskTitle"
                     v-model="newTask.title"
                     placeholder="Enter task title"
-                required
-              >
+                    required
+                  />
                 </div>
               </div>
               <div class="col-md-4">
@@ -232,19 +232,19 @@
                   <label for="newTaskPriority" class="form-label">Priority</label>
                   <select class="form-select" id="newTaskPriority" v-model="newTask.priority">
                     <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
+                    <option value="Medium" selected>Medium</option>
                     <option value="High">High</option>
                   </select>
                 </div>
               </div>
             </div>
-            
+
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
                   <label for="newTaskStatus" class="form-label">Status</label>
                   <select class="form-select" id="newTaskStatus" v-model="newTask.status">
-                    <option value="Pending">Pending</option>
+                    <option value="Pending" selected>Pending</option>
                     <option value="In Progress">In Progress</option>
                     <option value="Completed">Completed</option>
                   </select>
@@ -262,26 +262,26 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
                   <label for="newTaskDueDate" class="form-label">Due Date</label>
-                  <input 
-                    type="date" 
-                    class="form-control" 
-                    id="newTaskDueDate" 
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="newTaskDueDate"
                     v-model="newTask.dueDate"
-                  >
+                  />
                 </div>
               </div>
             </div>
-            
+
             <div class="mb-3">
               <label for="newTaskDescription" class="form-label">Description</label>
-              <textarea 
-                class="form-control" 
-                id="newTaskDescription" 
+              <textarea
+                class="form-control"
+                id="newTaskDescription"
                 v-model="newTask.description"
                 rows="4"
                 placeholder="Enter task description"
@@ -290,11 +290,11 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button 
-              type="button" 
-              class="btn btn-primary" 
+            <button
+              type="button"
+              class="btn btn-primary"
               @click="confirmAddTask"
-              :disabled="!newTask.title.trim()"
+              :disabled="!newTask.title || !newTask.title.trim()"
             >
               {{ editMode ? 'Update Task' : 'Add Task' }}
             </button>
@@ -307,280 +307,317 @@
 
 <script>
 import { Modal } from 'bootstrap';
-import { mapState, mapGetters, mapActions } from 'vuex';
 
 export default {
-  name: "AppTaskEvaluation",
+  name: 'AppTaskEvaluation',
   data() {
     return {
+      tasks: [],
+      employees: [],
+      loading: false,
+      error: null,
+
       newTask: {
-        title: "",
-        description: "",
-        priority: "Medium",
-        dueDate: "",
-        status: "Pending",
-        employeeId: ""
+        title: '',
+        description: '',
+        priority: 'Medium',
+        dueDate: '',
+        status: 'Pending',
+        employeeId: ''
       },
-      employeeFilter: "",
-      statusFilter: "",
-      priorityFilter: "",
-      searchQuery: "",
+
+      employeeFilter: '',
+      statusFilter: '',
+      priorityFilter: '',
+      searchQuery: '',
+
       taskModal: null,
       editMode: false,
       editingTask: null
     };
   },
   computed: {
-    ...mapState('performance', ['tasks', 'employees', 'loading', 'error']),
-    ...mapGetters('performance', ['allEmployees', 'getTasksByEmployee']),
-    
+    allEmployees() {
+      return Array.isArray(this.employees) ? this.employees : [];
+    },
     completedCount() {
-      return this.tasks.filter(task => task.status === 'Completed').length;
+      return this.tasks.filter(t => t.status === 'Completed').length;
     },
-    
     pendingCount() {
-      return this.tasks.filter(task => task.status === 'Pending').length;
+      return this.tasks.filter(t => t.status === 'Pending').length;
     },
-    
     completionRate() {
       if (this.tasks.length === 0) return 0;
       return Math.round((this.completedCount / this.tasks.length) * 100);
     },
-    
     filteredTasks() {
       let filtered = [...this.tasks];
-      
-      // Filter by employee
+
       if (this.employeeFilter) {
-        filtered = filtered.filter(task => task.employeeId === this.employeeFilter);
+        filtered = filtered.filter(task => String(task.employeeId || '') === String(this.employeeFilter));
       }
-      
-      // Filter by status
       if (this.statusFilter) {
         filtered = filtered.filter(task => task.status === this.statusFilter);
       }
-      
-      // Filter by priority
       if (this.priorityFilter) {
         filtered = filtered.filter(task => task.priority === this.priorityFilter);
       }
-      
-      // Filter by search query
       if (this.searchQuery) {
-        const query = this.searchQuery.toLowerCase();
-        filtered = filtered.filter(task => 
-          (task.title && task.title.toLowerCase().includes(query)) ||
-          (task.description && task.description.toLowerCase().includes(query))
+        const q = this.searchQuery.toLowerCase();
+        filtered = filtered.filter(task =>
+          (task.title && task.title.toLowerCase().includes(q)) ||
+          (task.name && task.name.toLowerCase().includes(q)) ||
+          (task.description && task.description.toLowerCase().includes(q))
         );
       }
-      
-      // Sort tasks: High priority first, then by due date, then by status
+
       return filtered.sort((a, b) => {
-        // Priority sorting
-        const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
-        const aPriority = priorityOrder[a.priority] || 1;
-        const bPriority = priorityOrder[b.priority] || 1;
-        if (aPriority !== bPriority) return bPriority - aPriority;
-        
-        // Due date sorting
+        const priorityOrder = { High: 3, Medium: 2, Low: 1 };
+        const aP = priorityOrder[a.priority] || 1;
+        const bP = priorityOrder[b.priority] || 1;
+        if (aP !== bP) return bP - aP;
+
         if (a.dueDate && b.dueDate) {
           return new Date(a.dueDate) - new Date(b.dueDate);
         }
-        
-        // Status sorting (Pending first, then In Progress, then Completed)
-        const statusOrder = { 'Pending': 1, 'In Progress': 2, 'Completed': 3 };
-        const aStatus = statusOrder[a.status] || 1;
-        const bStatus = statusOrder[b.status] || 1;
-        return aStatus - bStatus;
+
+        const statusOrder = { Pending: 1, 'In Progress': 2, Completed: 3 };
+        const aS = statusOrder[a.status] || 1;
+        const bS = statusOrder[b.status] || 1;
+        return aS - bS;
       });
     }
   },
   methods: {
-    ...mapActions('performance', [
-      'fetchTasks',
-      'createTask',
-      'updateTask',
-      'deleteTask',
-      'fetchEmployees'
-    ]),
-    
-    getEmployeeName(employeeId) {
-      const employee = this.employees.find(e => e.id === employeeId);
-      return employee ? employee.name : 'Unassigned';
+    // Notify wrapper: prefers this.$notify if present
+    notify({ type = 'info', title = '', text = '' }) {
+      if (typeof this.$notify === 'function') {
+        this.$notify({ type, title, text });
+      } else {
+        if (type === 'error') {
+          // eslint-disable-next-line no-alert
+          alert(`${title || 'Error'}: ${text}`);
+        } else {
+          console.log(`[${type}] ${title}: ${text}`);
+        }
+      }
     },
-    
+
+    normalizeEmployee(raw) {
+      return {
+        id: raw.id ?? raw.user_id ?? raw.userId ?? raw.employee_id ?? raw.employeeId ?? null,
+        name: raw.name ?? raw.full_name ?? raw.email ?? `User ${raw.id ?? ''}`
+      };
+    },
+
+    normalizeTask(raw) {
+      const id = raw.id ?? raw.task_id ?? raw.taskId ?? null;
+      const title = raw.title ?? raw.name ?? `Task ${id ?? ''}`;
+      const description = raw.description ?? raw.details ?? '';
+      const status = raw.status ?? 'Pending';
+      const priority = raw.priority ?? 'Medium';
+      const employeeId = raw.employeeId ?? raw.user_id ?? raw.userId ?? '';
+      const dueDate = raw.dueDate ?? raw.due_date ?? null;
+      const completedDate = raw.completedDate ?? raw.completed_at ?? null;
+
+      return {
+        id,
+        title,
+        name: title,
+        description,
+        status,
+        priority,
+        employeeId,
+        dueDate,
+        completedDate
+      };
+    },
+
+    async loadEmployees() {
+      try {
+        const res = await this.$axios.get('/list-users');
+        const payload = res?.data?.data ?? res?.data?.items ?? res?.data ?? [];
+        this.employees = (Array.isArray(payload) ? payload : []).map(this.normalizeEmployee).filter(e => e.id != null);
+      } catch (e) {
+        this.employees = [];
+      }
+    },
+
+    async loadTasks() {
+      try {
+        const res = await this.$axios.get('/list-task');
+        const payload = res?.data?.data ?? res?.data?.items ?? res?.data ?? [];
+        this.tasks = (Array.isArray(payload) ? payload : []).map(this.normalizeTask);
+      } catch (e) {
+        this.tasks = [];
+      }
+    },
+
     async refreshTasks() {
+      this.loading = true;
+      this.error = null;
       try {
-        await this.fetchTasks();
-        await this.fetchEmployees();
-        this.$notify({
-          type: 'success',
-          title: 'Success',
-          text: 'Tasks refreshed successfully'
-        });
-      } catch (error) {
-        this.$notify({
-          type: 'error',
-          title: 'Error',
-          text: 'Failed to refresh tasks'
-        });
+        await Promise.all([this.loadTasks(), this.loadEmployees()]);
+        this.notify({ type: 'success', title: 'Success', text: 'Tasks refreshed successfully' });
+      } catch (e) {
+        this.error = e?.message || 'Failed to refresh tasks';
+        this.notify({ type: 'error', title: 'Error', text: this.error });
+      } finally {
+        this.loading = false;
       }
     },
-    
+
+    getEmployeeName(employeeId) {
+      const emp = this.employees.find(e => String(e.id) === String(employeeId));
+      return emp ? emp.name : 'Unassigned';
+    },
+
     async toggleStatus(task) {
-      try {
-        const newStatus = task.status === "Completed" ? "In Progress" : "Completed";
-        const updatedTask = {
-          ...task,
-          status: newStatus,
-          completedDate: newStatus === 'Completed' ? new Date().toISOString() : null
-        };
-        
-        await this.updateTask({ id: task.id, taskData: updatedTask });
-        this.$notify({
-          type: 'success',
-          title: 'Success',
-          text: `Task marked as ${newStatus}`
-        });
-      } catch (error) {
-        this.$notify({
-          type: 'error',
-          title: 'Error',
-          text: 'Failed to update task status'
-        });
-      }
-    },
-    
+  const newStatus = task.status === 'Completed' ? 'In Progress' : 'Completed';
+  task.status = newStatus;
+  task.completedDate = newStatus === 'Completed' ? new Date().toISOString() : null;
+
+  try {
+    await this.$axios.put(`/update-task/${task.id}`, {
+      status: newStatus,
+      completedDate: task.completedDate
+    });
+    this.notify({ type: 'success', title: 'Success', text: `Task marked as ${newStatus}` });
+  } catch {
+    this.notify({ type: 'info', title: 'Note', text: 'Status updated locally (no API endpoint)' });
+  }
+},
+
     addNewTask() {
       this.editMode = false;
       this.editingTask = null;
       this.newTask = {
-        title: "",
-        description: "",
-        priority: "Medium",
-        dueDate: "",
-        status: "Pending",
-        employeeId: ""
+        title: '',
+        description: '',
+        priority: 'Medium',
+        dueDate: '',
+        status: 'Pending',
+        employeeId: ''
       };
       this.taskModal.show();
     },
-    
+
     editTask(task) {
       this.editMode = true;
       this.editingTask = task;
       this.newTask = {
-        title: task.title || task.name || "",
-        description: task.description || "",
-        priority: task.priority || "Medium",
-        dueDate: task.dueDate || "",
-        status: task.status || "Pending",
-        employeeId: task.employeeId || ""
+        title: task.title || task.name || '',
+        description: task.description || '',
+        priority: task.priority || 'Medium',
+        dueDate: task.dueDate ? String(task.dueDate).slice(0, 10) : '',
+        status: task.status || 'Pending',
+        employeeId: task.employeeId || ''
       };
       this.taskModal.show();
     },
-    
+
     async confirmAddTask() {
-      if (!this.newTask.title.trim()) {
-        this.$notify({
-          type: 'error',
-          title: 'Error',
-          text: 'Task title is required'
-        });
+      if (!this.newTask.title || !this.newTask.title.trim()) {
+        this.notify({ type: 'error', title: 'Error', text: 'Task title is required' });
         return;
       }
-      
+
       try {
-        if (this.editMode && this.editingTask) {
-          await this.updateTask({ 
-            id: this.editingTask.id, 
-            taskData: this.newTask 
-          });
-          this.$notify({
-            type: 'success',
-            title: 'Success',
-            text: 'Task updated successfully'
-          });
+        if (this.editMode && this.editingTask?.id != null) {
+          // Try server update; if not supported, update locally
+          try {
+            await this.$axios.put(`/update-task/${this.editingTask.id}`, this.newTask);
+            await this.loadTasks();
+            this.notify({ type: 'success', title: 'Success', text: 'Task updated successfully' });
+          } catch {
+            // Local update fallback
+            const idx = this.tasks.findIndex(t => String(t.id) === String(this.editingTask.id));
+            if (idx !== -1) {
+              const merged = { ...this.tasks[idx], ...this.newTask };
+              this.$set(this.tasks, idx, this.normalizeTask(merged));
+            }
+            this.notify({ type: 'info', title: 'Note', text: 'Task updated locally (no API endpoint)' });
+          }
         } else {
-          await this.createTask(this.newTask);
-          this.$notify({
-            type: 'success',
-            title: 'Success',
-            text: 'Task created successfully'
+          // Create task (supported by your API)
+          await this.$axios.post('/create-task', {
+            title: this.newTask.title,
+            description: this.newTask.description,
+            priority: this.newTask.priority,
+            status: this.newTask.status,
+            employeeId: this.newTask.employeeId || null,
+            dueDate: this.newTask.dueDate || null
           });
+          await this.loadTasks();
+          this.notify({ type: 'success', title: 'Success', text: 'Task created successfully' });
         }
-      
-      this.taskModal.hide();
-      } catch (error) {
-        this.$notify({
+
+        this.taskModal.hide();
+      } catch {
+        this.notify({
           type: 'error',
           title: 'Error',
           text: this.editMode ? 'Failed to update task' : 'Failed to create task'
         });
       }
     },
-    
+
     async removeTask(id) {
+      if (!id) return;
       if (!confirm('Are you sure you want to delete this task?')) return;
-      
+
       try {
-        await this.deleteTask(id);
-        this.$notify({
-          type: 'success',
-          title: 'Success',
-          text: 'Task deleted successfully'
-        });
-      } catch (error) {
-        this.$notify({
-          type: 'error',
-          title: 'Error',
-          text: 'Failed to delete task'
-        });
+        // Try server delete; if not supported, remove locally
+        try {
+          await this.$axios.post(`/delete-task/${id}`);
+          await this.loadTasks();
+          this.notify({ type: 'success', title: 'Success', text: 'Task deleted successfully' });
+        } catch {
+          this.tasks = this.tasks.filter(t => String(t.id) !== String(id));
+          this.notify({ type: 'info', title: 'Note', text: 'Task removed locally (no API endpoint)' });
+        }
+      } catch {
+        this.notify({ type: 'error', title: 'Error', text: 'Failed to delete task' });
       }
     },
-    
+
     formatDate(dateStr) {
       if (!dateStr) return '';
-      const date = new Date(dateStr);
-      return date.toLocaleDateString();
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? '' : d.toLocaleDateString();
     },
-    
+
     getStatusBadgeClass(status) {
       const classes = {
-        'Pending': 'bg-warning',
+        Pending: 'bg-warning',
         'In Progress': 'bg-info',
-        'Completed': 'bg-success'
+        Completed: 'bg-success'
       };
       return classes[status] || 'bg-secondary';
     },
-    
+
     getPriorityBadgeClass(priority) {
       const classes = {
-        'High': 'bg-danger',
-        'Medium': 'bg-warning',
-        'Low': 'bg-success'
+        High: 'bg-danger',
+        Medium: 'bg-warning',
+        Low: 'bg-success'
       };
       return classes[priority] || 'bg-secondary';
     }
   },
   async mounted() {
     this.taskModal = new Modal(document.getElementById('taskModal'));
-    
-    // Load tasks and employees on component mount
+    this.loading = true;
     try {
-      await this.fetchTasks();
-      await this.fetchEmployees();
-    } catch (error) {
-      this.$notify({
-        type: 'error',
-        title: 'Error',
-        text: 'Failed to load data'
-      });
+      await Promise.all([this.loadTasks(), this.loadEmployees()]);
+    } catch {
+      this.notify({ type: 'error', title: 'Error', text: 'Failed to load data' });
+    } finally {
+      this.loading = false;
     }
   }
 };
 </script>
-
-
 
 <style scoped>
 .task-evaluator-container {
@@ -833,16 +870,16 @@ export default {
   .task-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .stat-card {
     margin-bottom: 1rem;
   }
-  
+
   .task-header {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .task-actions {
     margin-top: 0.5rem;
   }
@@ -854,12 +891,12 @@ export default {
     align-items: flex-start;
     gap: 0.5rem;
   }
-  
+
   .task-actions {
     width: 100%;
     justify-content: flex-end;
   }
-  
+
   .task-stats {
     display: flex;
     flex-wrap: wrap;
