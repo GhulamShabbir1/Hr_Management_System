@@ -60,9 +60,24 @@ export default {
     // Add a new employee
     async addEmployee({ commit }, employeeData) {
       try {
-        const response = await api.post('/add-user', employeeData);
-        console.log('Employee added:', response.data.data.data);
-        commit('ADD_EMPLOYEE', response.data.data.data);
+        const hasFiles = employeeData.resumeFile || employeeData.contractFile;
+        let payload = employeeData;
+        let config = {};
+
+        if (hasFiles) {
+          const form = new FormData();
+          Object.keys(employeeData).forEach(k => {
+            if (k === 'resumeFile' && employeeData.resumeFile) form.append('resume', employeeData.resumeFile);
+            else if (k === 'contractFile' && employeeData.contractFile) form.append('contract', employeeData.contractFile);
+            else if (employeeData[k] !== undefined && employeeData[k] !== null) form.append(k, employeeData[k]);
+          });
+          payload = form;
+          config.headers = { 'Content-Type': 'multipart/form-data' };
+        }
+
+        const response = await api.post('/users', payload, config);
+        const created = response.data?.data || response.data;
+        commit('ADD_EMPLOYEE', created);
       } catch (error) {
         console.error('Error adding employee:', error);
         throw error;
@@ -70,34 +85,32 @@ export default {
     },
 
     // Update an employee
-    // Update an employee
-async updateEmployee({ commit }, updatedEmployee) {
-  try {
-    const response = await api.post(`/update-user/${updatedEmployee.id}`, updatedEmployee, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+    async updateEmployee({ commit }, updatedEmployee) {
+      try {
+        const response = await api.post(`/update-user/${updatedEmployee.id}`, updatedEmployee, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+          }
+        });
+
+        console.log('Update Employee API Response:', response.data);
+
+        // Try to get updated employee object from response, fallback to original
+        const updatedData = response.data?.data?.data || updatedEmployee;
+
+        // Commit only if updatedData has an id
+        if (updatedData && updatedData.id) {
+          commit('UPDATE_EMPLOYEE', updatedData);
+        } else {
+          console.warn('No updated employee data returned. Using input data.');
+          commit('UPDATE_EMPLOYEE', updatedEmployee);
+        }
+
+      } catch (error) {
+        console.error('Error updating employee:', error.response?.data || error);
+        throw error;
       }
-    });
-
-    console.log('Update Employee API Response:', response.data);
-
-    // Try to get updated employee object from response, fallback to original
-    const updatedData = response.data?.data?.data || updatedEmployee;
-
-    // Commit only if updatedData has an id
-    if (updatedData && updatedData.id) {
-      commit('UPDATE_EMPLOYEE', updatedData);
-    } else {
-      console.warn('No updated employee data returned. Using input data.');
-      commit('UPDATE_EMPLOYEE', updatedEmployee);
-    }
-
-  } catch (error) {
-    console.error('Error updating employee:', error.response?.data || error);
-    throw error;
-  }
-},
-
+    },
 
     // Delete an employee
     async deleteEmployee({ commit }, id) {
