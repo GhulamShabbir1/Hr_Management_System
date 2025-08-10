@@ -1,28 +1,56 @@
+// src/services/performanceServices.js
 import api from './api';
 
+function toApiInput(payload = {}) {
+  const uid =
+    payload.user_id ??
+    payload.userId ??
+    payload['User ID'] ??
+    null;
+
+  const ratingRaw =
+    payload.rating ??
+    payload['User Rating'] ??
+    null;
+
+  const feedbackRaw =
+    payload.feedback ??
+    payload['User Feedback'] ??
+    payload.comments ??
+    '';
+
+  return {
+    user_id: uid,
+    rating: ratingRaw != null ? Number(ratingRaw) : null,
+    feedback: String(feedbackRaw).trim()
+  };
+}
+
 export default {
-  async submitReview(reviewData) {
-    const response = await api.post('/performance/reviews', reviewData);
-    return response.data;
+  async createReview(payload) {
+    const body = toApiInput(payload);
+    const res = await api.post('/create-performance-review', body);
+    return res.data;
   },
 
-  async getEmployeeReviews(employeeId) {
-    const response = await api.get(`/performance/reviews/employee/${employeeId}`);
-    return response.data;
+  async updateReview(id, payload) {
+    const body = toApiInput(payload);
+    const res = await api.put(`/update-performance-review/${id}`, body);
+    return res.data;
   },
 
-  async getPendingReviews(reviewerId) {
-    const response = await api.get(`/performance/reviews/pending/${reviewerId}`);
-    return response.data;
+  async deleteReview(id) {
+    const res = await api.post(`/delete-performance-review/${id}`);
+    return res.data;
   },
 
-  async getReviewTemplates() {
-    const response = await api.get('/performance/templates');
-    return response.data;
+  async showReview(id) {
+    const res = await api.get(`/show-performance-review/${id}`);
+    return res.data;
   },
 
-  async getKPIs(employeeId) {
-    const response = await api.get(`/performance/kpis/${employeeId}`);
-    return response.data;
+  async listReviews() {
+    const res = await api.get('/list-performance-review');
+    return res.data;
   }
 };

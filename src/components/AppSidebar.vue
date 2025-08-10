@@ -118,7 +118,7 @@ export default {
           label: "Dashboard", 
           path: "/dashboard", 
           icon: "fas fa-tachometer-alt", 
-          roles: ["Admin", "HR", "Employee"],
+          roles: ["Admin", "HR", "Employee", "Manager"],
           notification: false
         },
         { 
@@ -126,19 +126,7 @@ export default {
           path: "/employees", 
           icon: "fas fa-users", 
           roles: ["Admin", "HR"],
-          notification: false,
-          children: [
-            {
-              label: "Employee List",
-              path: "/employees/list",
-              icon: "fas fa-list"
-            },
-            {
-              label: "Add Employee",
-              path: "/employees/add",
-              icon: "fas fa-user-plus"
-            }
-          ]
+          notification: false
         },
         { 
           label: "Attendance", 
@@ -153,29 +141,14 @@ export default {
               icon: "fas fa-fingerprint"
             },
             {
-              label: "Attendance Report",
-              path: "/attendance/report",
+              label: "Attendance Reports",
+              path: "/attendance/reports",
               icon: "fas fa-history"
-            }
-          ]
-        },
-        { 
-          label: "Leave Management", 
-          path: "/leave", 
-          icon: "fas fa-calendar-minus", 
-          roles: ["Admin", "HR", "Employee"],
-          notification: true,
-          children: [
-            {
-              label: "Request Leave",
-              path: "/leave/request",
-              icon: "fas fa-plus-circle"
             },
             {
-              label: "Leave Approvals",
-              path: "/leave/approvals",
-              icon: "fas fa-check-circle",
-              roles: ["Admin", "HR"]
+              label: "Leave Request",
+              path: "/attendance/leave-request",
+              icon: "fas fa-calendar-minus"
             }
           ]
         },
@@ -190,12 +163,12 @@ export default {
           label: "Performance", 
           path: "/performance", 
           icon: "fas fa-star", 
-          roles: ["HR", "Admin"],
+          roles: ["HR", "Admin", "Manager"],
           notification: true,
           children: [
             {
               label: "Reviews",
-              path: "/performance/reviews",
+              path: "/performance",
               icon: "fas fa-clipboard-check"
             },
             {
@@ -209,14 +182,7 @@ export default {
           label: "Announcements", 
           path: "/announcements", 
           icon: "fas fa-bullhorn", 
-          roles: ["Admin", "HR", "Employee"],
-          notification: false
-        },
-        { 
-          label: "Reports", 
-          path: "/reports", 
-          icon: "fas fa-chart-pie", 
-          roles: ["Admin", "HR"],
+          roles: ["Admin", "HR", "Employee", "Manager"],
           notification: false
         }
       ],
