@@ -6,11 +6,7 @@
           <i class="bi bi-file-earmark-text me-2" aria-hidden="true"></i>
           Payslip for {{ employee.name }}
         </h1>
-        <button 
-          @click="$router.go(-1)" 
-          class="btn btn-outline-secondary"
-          aria-label="Go back to previous page"
-        >
+        <button @click="$router.go(-1)" class="btn btn-outline-secondary" aria-label="Go back to previous page">
           <i class="bi bi-arrow-left me-2" aria-hidden="true"></i> Back
         </button>
       </div>
@@ -144,23 +140,12 @@
 
       <!-- Action Buttons -->
       <div class="d-flex justify-content-end gap-3 mt-4 no-print">
-        <button 
-          @click="printPayslip" 
-          class="btn btn-outline-primary"
-          aria-label="Print payslip"
-          data-bs-toggle="tooltip" 
-          title="Print this payslip"
-        >
+        <button @click="printPayslip" class="btn btn-outline-primary" aria-label="Print payslip"
+          data-bs-toggle="tooltip" title="Print this payslip">
           <i class="bi bi-printer me-2" aria-hidden="true"></i> Print
         </button>
-        <button 
-          @click="downloadPayslip" 
-          class="btn btn-gradient-primary"
-          aria-label="Download payslip as PDF"
-          data-bs-toggle="tooltip" 
-          title="Download PDF"
-          :disabled="isLoading"
-        >
+        <button @click="downloadPayslip" class="btn btn-gradient-primary" aria-label="Download payslip as PDF"
+          data-bs-toggle="tooltip" title="Download PDF" :disabled="isLoading">
           <template v-if="isLoading">
             <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
             Processing...
@@ -169,36 +154,27 @@
             <i class="bi bi-download me-2" aria-hidden="true"></i> Download PDF
           </template>
         </button>
-        <button 
-          @click="emailPayslip" 
-          class="btn btn-gradient-success"
-          aria-label="Email payslip"
-          data-bs-toggle="tooltip" 
-          title="Send via email"
-          v-if="employee.email"
-          :disabled="isLoading"
-        >
+        <button @click="emailPayslip" class="btn btn-gradient-success" aria-label="Email payslip"
+          data-bs-toggle="tooltip" title="Send via email" v-if="employee.email" :disabled="isLoading">
           <i class="bi bi-envelope me-2" aria-hidden="true"></i> Email
         </button>
       </div>
     </div>
 
     <!-- Toast Notification -->
-    <AppToast 
-      :show="showToast" 
-      :message="toastMessage" 
-      :type="toastType" 
-      @close="showToast = false"
-    />
+    <AppNotificationToast :show="showToast" :message="toastMessage" :type="toastType" @close="showToast = false" />
   </div>
 </template>
 
 <script>
-import AppToast from './AppToast.vue';
+import 'boostrap';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import AppNotificationToast from '../announcements/AppNotificationToast.vue';
 
 export default {
   name: "AppPayslipDownload",
-  components: { AppToast },
+  components: { AppNotificationToast },
   props: {
     employee: {
       type: Object,
@@ -218,15 +194,15 @@ export default {
   },
   computed: {
     grossSalary() {
-      return (this.employee.basic || 0) + 
-             (this.employee.bonus || 0) + 
-             (this.employee.allowance || 0) + 
-             (this.employee.overtime || 0);
+      return (this.employee.basic || 0) +
+        (this.employee.bonus || 0) +
+        (this.employee.allowance || 0) +
+        (this.employee.overtime || 0);
     },
     netPay() {
-      return this.grossSalary - 
-             (this.employee.deduction || 0) - 
-             (this.employee.tax || 0);
+      return this.grossSalary -
+        (this.employee.deduction || 0) -
+        (this.employee.tax || 0);
     }
   },
   methods: {
@@ -249,8 +225,35 @@ export default {
     async downloadPayslip() {
       this.isLoading = true;
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const element = this.$el.querySelector('.card-gradient');
+        if (!element) {
+          throw new Error('Could not find payslip content');
+        }
+
+        // Show preparing message
+        this.showNotification('Preparing PDF download...', 'info');
+
+        const options = {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: document.documentElement.scrollWidth,
+          windowHeight: document.documentElement.scrollHeight
+        };
+
+        const canvas = await html2canvas(element, options);
+        const imgData = canvas.toDataURL('image/png');
+
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`payslip-${this.employee.name.replace(/\s+/g, '-')}-${this.employee.id}.pdf`);
+
         this.showNotification('Payslip downloaded successfully');
       } catch (error) {
         this.showNotification('Failed to download payslip', 'error');
@@ -267,7 +270,7 @@ export default {
     },
     async emailPayslip() {
       if (!this.employee.email) return;
-      
+
       this.isLoading = true;
       try {
         // Simulate API call
@@ -343,7 +346,7 @@ export default {
     height: 50px;
     font-size: 1.2rem;
   }
-  
+
   .card-gradient {
     padding: 1.5rem !important;
   }
@@ -353,16 +356,16 @@ export default {
   .no-print {
     display: none !important;
   }
-  
+
   body {
     background: white !important;
   }
-  
+
   .card-gradient {
     box-shadow: none !important;
     border: 1px solid #ddd !important;
   }
-  
+
   .card-header {
     background: white !important;
     color: black !important;

@@ -188,20 +188,21 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.85);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1050;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
 }
 
 .modal-content {
-  background-color: white;
-  border-radius: 0.5rem;
+  background-color: #ffffff;
+  border-radius: 12px;
   width: 100%;
-  max-width: 500px;
-  overflow: hidden;
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  max-width: 600px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .modal-header {

@@ -1,28 +1,80 @@
-import api from './apiService';
+// import api from './api';
 
-export default {
-  async getAllDepartments() {
-    const response = await api.get('/departments');
-    return response.data;
-  },
+// export default {
+//   // Get all departments with optional filters
+//   async getDepartments(filters = {}) {
+//     try {
+//       const response = await api.get('/departments', { params: filters });
+//       return response;
+//     } catch (error) {
+//       console.error('Error fetching departments:', error);
+//       throw error;
+//     }
+//   },
 
-  async getDepartmentEmployees(departmentId) {
-    const response = await api.get(`/departments/${departmentId}/employees`);
-    return response.data;
-  },
+//   // Get a specific department
+//   async getDepartment(id) {
+//     try {
+//       const response = await api.get(`/departments/${id}`);
+//       return response;
+//     } catch (error) {
+//       console.error('Error fetching department:', error);
+//       throw error;
+//     }
+//   },
 
-  async createDepartment(departmentData) {
-    const response = await api.post('/departments', departmentData);
-    return response.data;
-  },
+//   // Get department employees
+//   async getDepartmentEmployees(departmentId) {
+//     try {
+//       const response = await api.get(`/departments/${departmentId}/employees`);
+//       return response;
+//     } catch (error) {
+//       console.error('Error fetching department employees:', error);
+//       throw error;
+//     }
+//   },
 
-  async updateDepartment(departmentId, departmentData) {
-    const response = await api.put(`/departments/${departmentId}`, departmentData);
-    return response.data;
-  },
+//   // Create a new department
+//   async createDepartment(departmentData) {
+//     try {
+//       const response = await api.post('/departments', departmentData);
+//       return response;
+//     } catch (error) {
+//       console.error('Error creating department:', error);
+//       throw error;
+//     }
+//   },
 
-  async deleteDepartment(departmentId) {
-    const response = await api.delete(`/departments/${departmentId}`);
-    return response.data;
-  }
-};
+//   // Update a department
+//   async updateDepartment(id, departmentData) {
+//     try {
+//       const response = await api.put(`/departments/${id}`, departmentData);
+//       return response;
+//     } catch (error) {
+//       console.error('Error updating department:', error);
+//       throw error;
+//     }
+//   },
+
+//   // Delete a department
+//   async deleteDepartment(id) {
+//     try {
+//       const response = await api.delete(`/departments/${id}`);
+//       return response;
+//     } catch (error) {
+//       console.error('Error deleting department:', error);
+//       throw error;
+//     }
+//   },
+
+//   // Get department statistics
+//   async getDepartmentStats(id) {
+//     try {
+//       const response = await api.get(`/departments/${id}/stats`);
+//       return response;
+//     } catch (error) {
+//       console.error('Error fetching department statistics:', error);
+//       throw error;
+//     }
+//   }
+// };

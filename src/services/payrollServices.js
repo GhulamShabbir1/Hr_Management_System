@@ -1,4 +1,4 @@
-import api from './apiService';
+import api from './api';
 
 export default {
   async getSalaryDetails(employeeId) {

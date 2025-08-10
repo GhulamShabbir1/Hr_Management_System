@@ -207,8 +207,9 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" @click="showTaskModal = false">Cancel</button>
-            <button type="button" class="btn btn-primary" @click="addTask" :disabled="!newTask.name">
-              Add Task
+            <button type="button" class="btn btn-primary" @click="addTask" :disabled="!newTask.name || taskLoading">
+              <span v-if="taskLoading" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+              {{ taskLoading ? 'Adding...' : 'Add Task' }}
             </button>
           </div>
         </div>
@@ -216,7 +217,7 @@
     </div>
 
     <!-- Toast Notification -->
-    <AppToast 
+    <AppNotificationToast 
       :show="showToast" 
       :message="toastMessage" 
       :type="toastType" 
@@ -227,24 +228,14 @@
 
 <script>
 import { Modal } from 'bootstrap';
-import AppToast from './AppToast.vue';
+import AppNotificationToast from '../announcements/AppNotificationToast.vue';
+import { mapActions, mapState } from 'vuex';
 
 export default {
   name: "AppReviewForm",
-  components: { AppToast },
+  components: { AppNotificationToast },
   data() {
     return {
-      employees: [
-        { id: 1, name: "Ali Khan", department: "IT" },
-        { id: 2, name: "Sara Ahmed", department: "HR" },
-        { id: 3, name: "Omar Malik", department: "Finance" },
-      ],
-      allTasks: [
-        { id: 1, name: "Project Alpha", description: "Complete project documentation", employeeId: 1 },
-        { id: 2, name: "Website Redesign", description: "Implement new UI components", employeeId: 1 },
-        { id: 3, name: "Client Support", description: "Handle tier 2 support tickets", employeeId: 2 },
-        { id: 4, name: "Budget Planning", description: "Prepare quarterly budget report", employeeId: 3 },
-      ],
       review: {
         employeeId: "",
         quarter: "Q" + (Math.floor(new Date().getMonth() / 3) + 1),
@@ -263,6 +254,7 @@ export default {
       filteredTasks: [],
       showTaskModal: false,
       loading: false,
+      taskLoading: false,
       showToast: false,
       toastMessage: '',
       toastType: 'success',
@@ -270,6 +262,8 @@ export default {
     };
   },
   computed: {
+    ...mapState('performance', ['employees', 'tasks']),
+    ...mapState(['loading']),
     ratingText() {
       const ratings = [
         "Needs Improvement",
@@ -291,17 +285,32 @@ export default {
     }
   },
   methods: {
-    loadEmployeeTasks() {
+    ...mapActions('performance', [
+      'fetchEmployees', 
+      'fetchTasks', 
+      'createReview',
+      'createTask'
+    ]),
+    
+    async loadEmployeeTasks() {
       if (!this.review.employeeId) {
         this.filteredTasks = [];
         return;
       }
-      this.filteredTasks = this.allTasks.filter(
-        task => task.employeeId == this.review.employeeId
-      );
-      this.newTask.employeeId = this.review.employeeId;
-      this.review.taskIds = [];
+      
+      try {
+        await this.fetchTasks(this.review.employeeId);
+        this.filteredTasks = this.tasks.filter(
+          task => task.employeeId == this.review.employeeId
+        );
+        this.newTask.employeeId = this.review.employeeId;
+        this.review.taskIds = [];
+      } catch (error) {
+        console.error('Error loading tasks:', error);
+        this.showNotification('Failed to load tasks', 'error');
+      }
     },
+    
     async submitReview() {
       if (!this.isFormValid) {
         this.showNotification('Please complete all required fields', 'error');
@@ -310,31 +319,34 @@ export default {
 
       this.loading = true;
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
         const reviewData = {
-          ...this.review,
-          id: Date.now(),
-          date: new Date().toISOString(),
-          tasks: this.filteredTasks.filter(t => this.review.taskIds.includes(t.id))
+          employeeId: this.review.employeeId,
+          quarter: this.review.quarter,
+          taskIds: this.review.taskIds,
+          rating: this.review.rating,
+          achievements: this.review.achievements,
+          improvements: this.review.improvements,
+          comments: this.review.comments,
+          reviewer: this.review.reviewer
         };
 
-        // Save to local storage for demo
-        const savedReviews = JSON.parse(localStorage.getItem('performanceReviews')) || [];
-        savedReviews.push(reviewData);
-        localStorage.setItem('performanceReviews', JSON.stringify(savedReviews));
-
-        this.showNotification('Performance review submitted successfully!');
-        this.resetForm();
-        this.$emit('review-submitted', reviewData);
+        const response = await this.createReview(reviewData);
+        
+        if (response.success) {
+          this.showNotification('Performance review submitted successfully!');
+          this.resetForm();
+          this.$emit('review-submitted', reviewData);
+        } else {
+          this.showNotification(response.message || 'Failed to submit review', 'error');
+        }
       } catch (error) {
         console.error('Review submission error:', error);
-        this.showNotification('Failed to submit review. Please try again.', 'error');
+        this.showNotification(error.message || 'Failed to submit review. Please try again.', 'error');
       } finally {
         this.loading = false;
       }
     },
+    
     resetForm() {
       this.review = {
         employeeId: "",
@@ -348,33 +360,55 @@ export default {
       };
       this.filteredTasks = [];
     },
-    addTask() {
+    
+    async addTask() {
       if (!this.newTask.name.trim()) {
         this.showNotification('Task name is required', 'error');
         return;
       }
 
-      const newTask = {
-        id: Date.now(),
-        ...this.newTask,
-        employeeId: this.review.employeeId
-      };
+      this.taskLoading = true;
+      try {
+        const taskData = {
+          name: this.newTask.name,
+          description: this.newTask.description,
+          employeeId: this.review.employeeId
+        };
 
-      this.allTasks.push(newTask);
-      this.filteredTasks.push(newTask);
-      this.review.taskIds.push(newTask.id);
-      this.showTaskModal = false;
-      this.newTask = { name: "", description: "", employeeId: this.review.employeeId };
-      this.showNotification('Task added successfully');
+        const response = await this.createTask(taskData);
+        
+        if (response.success) {
+          this.showTaskModal = false;
+          this.newTask = { name: "", description: "", employeeId: this.review.employeeId };
+          this.showNotification('Task added successfully');
+          await this.loadEmployeeTasks();
+        } else {
+          this.showNotification(response.message || 'Failed to add task', 'error');
+        }
+      } catch (error) {
+        console.error('Error adding task:', error);
+        this.showNotification(error.message || 'Failed to add task', 'error');
+      } finally {
+        this.taskLoading = false;
+      }
     },
+    
     showNotification(message, type = 'success') {
       this.toastMessage = message;
       this.toastType = type;
       this.showToast = true;
     }
   },
-  mounted() {
+  async mounted() {
     this.taskModal = new Modal(document.getElementById('taskModal'));
+    
+    try {
+      await this.fetchEmployees();
+    } catch (error) {
+      console.error('Error loading employees:', error);
+      this.showNotification('Failed to load employee data', 'error');
+    }
+    
     this.$watch('showTaskModal', (val) => {
       if (val) {
         this.taskModal.show();

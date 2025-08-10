@@ -1,4 +1,5 @@
-// src/store/modules/auth.js
+import api from '../../services/api';
+
 export default {
   namespaced: true,
   state: {
@@ -24,81 +25,89 @@ export default {
   actions: {
     async login({ commit }, credentials) {
       try {
-        const mockUsers = {
-          'admin@example.com': { 
-            password: 'admin123', 
-            role: 'Admin', 
-            name: 'Admin User',
-            permissions: ['all']
-          },
-          'hr@example.com': { 
-            password: 'hr123', 
-            role: 'HR', 
-            name: 'HR Manager',
-            permissions: ['employees', 'attendance']
-          }
-        };
+        const response = await api.post('/login', credentials);
         
-        const user = mockUsers[credentials.email];
-        if (!user || user.password !== credentials.password) {
-          return { success: false, message: 'Invalid email or password' };
+        if (!response.data) {
+          throw new Error("No data received from server");
         }
 
         const authData = {
-          user: {
-            email: credentials.email,
-            role: user.role,
-            name: user.name,
-            permissions: user.permissions
-          },
-          token: 'mock-jwt-token',
-          refreshToken: 'mock-refresh-token',
-          expiresIn: 3600
+          token: response.data.token || response.data.data?.token,
+          refreshToken: response.data.refreshToken || null,
+          user: response.data.user || response.data.data?.user,
+          expiresIn: response.data.expiresIn || 3600
         };
-        
-        commit('SET_AUTH_DATA', authData);
-        localStorage.setItem('auth', JSON.stringify({
-          token: authData.token,
-          refreshToken: authData.refreshToken,
-          user: authData.user,
-          expiry: Date.now() + (authData.expiresIn * 1000)
-        }));
 
+        if (!authData.token || !authData.user) {
+          throw new Error("Invalid authentication data received");
+        }
+
+        commit('SET_AUTH_DATA', authData);
         return { success: true, user: authData.user };
       } catch (error) {
         console.error('Login failed:', error);
-        return { success: false, message: 'An unexpected error occurred. Please try again.' };
+        const message = error.response?.data?.message || 
+                       error.message || 
+                       'Login failed';
+        return { success: false, message };
+      }
+    },
+
+    async register({ commit }, userData) {
+      try {
+        const response = await api.post('/register', userData);
+        
+        if (!response.data) {
+          throw new Error("No data received from server");
+        }
+
+        // Optionally login user after registration
+        if (response.data.token) {
+          commit('SET_AUTH_DATA', {
+            token: response.data.token,
+            refreshToken: response.data.refreshToken || null,
+            user: response.data.user,
+            expiresIn: response.data.expiresIn || 3600
+          });
+        }
+
+        return { 
+          success: true, 
+          user: response.data.user,
+          token: response.data.token
+        };
+      } catch (error) {
+        console.error('Registration failed:', error);
+        let message = 'Registration failed';
+        
+        if (error.response) {
+          if (error.response.status === 409) {
+            message = 'Email already registered';
+          } else if (error.response.data?.message) {
+            message = error.response.data.message;
+          }
+        } else {
+          message = error.message || message;
+        }
+        
+        return { success: false, message };
       }
     },
 
     logout({ commit }) {
-      localStorage.removeItem('auth');
       commit('LOGOUT');
     },
 
     initializeAuth({ commit }) {
-      try {
-        const authData = JSON.parse(localStorage.getItem('auth'));
-        if (authData && authData.expiry > Date.now()) {
-          commit('SET_AUTH_DATA', {
-            user: authData.user,
-            token: authData.token,
-            refreshToken: authData.refreshToken,
-            expiresIn: Math.floor((authData.expiry - Date.now()) / 1000)
-          });
-        } else {
-          localStorage.removeItem('auth');
-        }
-      } catch (error) {
-        console.error('Failed to initialize auth:', error);
-        localStorage.removeItem('auth');
-      }
+      // This can be used to check existing auth state if needed
+      // Currently just ensures clean state
+      commit('LOGOUT');
     }
   },
   getters: {
     isAuthenticated: state => !!state.token,
     currentUser: state => state.user,
     userRole: state => state.user?.role || null,
-    userData: state => state.user || {}   // <-- Added to fix the error
+    userData: state => state.user || {}
   }
 };

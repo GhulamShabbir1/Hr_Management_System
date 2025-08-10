@@ -18,8 +18,8 @@
     >
       <div class="sidebar-header">
         <div class="brand-container">
-          <h3 class="brand-title">HRMS</h3>
-          <p class="brand-subtitle">Human Resource System</p>
+          <h3 class="brand-title" style="color: black;">HRMS</h3>
+          <p class="brand-subtitle" style="color: gray">Human Resource System</p>
         </div>
         <div class="user-info" v-if="user">
           <div class="avatar">
@@ -34,7 +34,7 @@
       
       <div class="menu-container">
         <ul class="nav flex-column">
-          <li v-for="item in filteredMenuItems" :key="item.path" class="nav-item">
+          <li v-for="(item, index) in filteredMenuItems" :key="`${item.path}-${index}`" class="nav-item">
             <router-link 
               :to="item.path" 
               class="nav-link"
@@ -65,7 +65,7 @@
                 v-if="item.children && isSubmenuOpen(item)" 
                 class="submenu"
               >
-                <li v-for="child in item.children" :key="child.path" class="submenu-item">
+                <li v-for="(child, childIndex) in item.children" :key="`${child.path}-${childIndex}`" class="submenu-item">
                   <router-link 
                     :to="child.path" 
                     class="submenu-link"
@@ -153,8 +153,8 @@ export default {
               icon: "fas fa-fingerprint"
             },
             {
-              label: "Attendance Log",
-              path: "/attendance/log",
+              label: "Attendance Report",
+              path: "/attendance/report",
               icon: "fas fa-history"
             }
           ]
@@ -333,6 +333,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 :root {
@@ -763,4 +764,4 @@ export default {
     padding-left: 2.5rem;
   }
 }
-</style>
+</style> 

@@ -46,8 +46,7 @@
                 class="form-control"
                 placeholder="Enter your password"
                 required
-                @focus="resetError"
-                aria-describedby="passwordHelp"
+                
               />
               <button 
                 type="button" 
@@ -76,6 +75,12 @@
             </router-link>
           </div>
           
+          <!-- Success message when coming from registration -->
+          <div v-if="showRegistrationSuccess" class="success-message" role="alert">
+            <i class="fas fa-check-circle" aria-hidden="true"></i>
+            <span>Registration successful! Please login with your credentials.</span>
+          </div>
+          
           <div v-if="error" class="error-message" role="alert">
             <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
             <span>{{ error }}</span>
@@ -83,7 +88,7 @@
           
           <button
             type="submit"
-            :disabled="isLoading || !isFormValid"
+           
             class="login-btn"
             aria-live="polite"
           >
@@ -181,12 +186,23 @@ export default {
       showPassword: false,
       error: null,
       isLoading: false,
-      showDemoCredentials: false
+      showDemoCredentials: false,
+      showRegistrationSuccess: false
     };
   },
   computed: {
-    isFormValid() {
-      return this.email && this.password.length >= 8;
+    // isFormValid() {
+    //   return this.email && this.password.length >= 8;
+    // }
+  },
+  mounted() {
+    // Check if user came from registration
+    if (this.$route.query.from === 'register') {
+      this.showRegistrationSuccess = true;
+      // Hide success message after 5 seconds
+      setTimeout(() => {
+        this.showRegistrationSuccess = false;
+      }, 5000);
     }
   },
   methods: {
@@ -410,6 +426,22 @@ export default {
   align-items: center;
   gap: 0.5rem;
   animation: shake 0.5s ease;
+}
+
+.success-message {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  animation: fadeIn 0.5s ease;
+  margin-bottom: 1rem;
+}
+
+.success-message i {
+  font-size: 1.2rem;
 }
 
 @keyframes shake {

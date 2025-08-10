@@ -1,10 +1,27 @@
-import api from './apiService';
+import api from './api';
 
 export default {
-  async getAll({ page = 1, limit = 10, search = '', status = '' }) {
-    const params = { page, limit, search, status };
+  async getAll({ 
+    page = 1, 
+    limit = 10, 
+    search = '', 
+    status = '', 
+    role = '',
+    department = '' 
+  }) {
+    const params = { 
+      page, 
+      limit, 
+      search, 
+      status,
+      role,
+      department
+    };
     const response = await api.get('/employees', { params });
-    return response.data;
+    return {
+      data: response.data.data,
+      pagination: response.data.pagination
+    };
   },
 
   async getById(id) {
@@ -18,7 +35,7 @@ export default {
   },
 
   async update(id, employeeData) {
-    const response = await api.put(`/employees/${id}`, employeeData);
+    const response = await api.patch(`/employees/${id}`, employeeData);
     return response.data;
   },
 
@@ -27,13 +44,17 @@ export default {
     return response.data;
   },
 
-  async uploadDocument(id, fileType, file) {
+  async toggleStatus(id) {
+    const response = await api.patch(`/employees/${id}/status`);
+    return response.data;
+  },
+
+  async uploadProfileImage(id, file) {
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', fileType);
+    formData.append('profile_image', file);
     
     const response = await api.post(
-      `/employees/${id}/documents`,
+      `/employees/${id}/profile-image`,
       formData,
       {
         headers: {
@@ -44,8 +65,26 @@ export default {
     return response.data;
   },
 
-  async getDocuments(id) {
-    const response = await api.get(`/employees/${id}/documents`);
+  async getStatistics() {
+    const response = await api.get('/employees/statistics');
+    return response.data;
+  },
+
+  async exportToExcel(params = {}) {
+    const response = await api.get('/employees/export', {
+      params,
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+
+  async getRoles() {
+    const response = await api.get('/employees/roles');
+    return response.data;
+  },
+
+  async getDepartments() {
+    const response = await api.get('/employees/departments');
     return response.data;
   }
 };

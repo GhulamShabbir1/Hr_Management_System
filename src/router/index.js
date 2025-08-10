@@ -1,26 +1,28 @@
 import Vue from "vue";
 import Router from "vue-router";
-import store from "@/store"; // <-- Use @ (alias for src)
+import store from "@/store";
 
-// Lazy-loaded components (ensure these paths exist)
+// Main Components
+const AppDashboard = () => import("@/pages/AppDashboard");
 const AppLogin = () => import("@/pages/AppLogin.vue");
 const AppRegister = () => import("@/pages/AppRegister.vue");
-const AppDashboard = () => import("@/pages/AppDashboard.vue");
 const AppNotFound = () => import("@/pages/AppNotFound.vue");
 
 // Employee Management
 const EmployeeList = () => import("@/components/employee/AppEmployeeList.vue");
 const EmployeeProfile = () => import("@/components/employee/AppEmployeeProfile.vue");
 
-// Attendance Management
+// Attendance
 const AttendanceCheck = () => import("@/components/attendance/AppAttendanceCheck.vue");
 const LeaveRequestForm = () => import("@/components/attendance/AppLeaveRequestForm.vue");
+const AttendanceReport = () => import("@/components/attendance/AppAttendanceReport.vue");
 
-// Payroll Management
+// Payroll
 const PayrollList = () => import("@/components/payroll/AppPayrollList.vue");
 
-// Performance Management
+// Performance
 const PerformanceReview = () => import("@/components/performance/AppReviewSummary.vue");
+const TaskEvaluation = () => import("@/components/performance/AppTaskEvaluation.vue");
 
 // Announcements
 const AnnouncementList = () => import("@/components/announcements/AppAnnouncementList.vue");
@@ -34,108 +36,169 @@ const router = new Router({
     { 
       path: "/", 
       redirect: "/dashboard",
-      meta: { title: "HRMS - Redirecting", transition: "fade" }
+      meta: { title: "HRMS" }
     },
     { 
       path: "/login", 
+      name: "login",
       component: AppLogin,
-      meta: { title: "HRMS - Login", transition: "slide-up", guestOnly: true }
+      meta: { title: "Login", guestOnly: true }
     },
     { 
       path: "/register", 
+      name: "register",
       component: AppRegister,
-      meta: { title: "HRMS - Register", transition: "slide-up", guestOnly: true }
+      meta: { title: "Register", guestOnly: true }
     },
     { 
       path: "/dashboard", 
+      name: "dashboard",
       component: AppDashboard, 
       meta: { 
         requiresAuth: true,
-        title: "HRMS - Dashboard",
-        transition: "fade",
+        title: "Dashboard",
         roles: ["Admin", "HR", "Employee", "Manager"]
       }
     },
     // Employee Management
     {
       path: "/employees",
+      name: "employees",
       component: EmployeeList,
-      meta: { requiresAuth: true, title: "HRMS - Employees", transition: "slide-right", roles: ["Admin", "HR"] }
+      meta: { 
+        requiresAuth: true, 
+        title: "Employees", 
+        roles: ["Admin", "HR"] 
+      }
     },
     {
       path: "/employees/:id",
+      name: "employee-profile",
       component: EmployeeProfile,
-      meta: { requiresAuth: true, title: "HRMS - Employee Profile", transition: "slide-right", roles: ["Admin", "HR", "Employee"] }
+      meta: { 
+        requiresAuth: true, 
+        title: "Employee Profile", 
+        roles: ["Admin", "HR", "Employee"] 
+      }
     },
-    // Attendance Management
+    // Attendance
+    {
+      path: "/attendance",
+      redirect: "/attendance/check"
+    },
     {
       path: "/attendance/check",
+      name: "attendance-check",
       component: AttendanceCheck,
-      meta: { requiresAuth: true, title: "HRMS - Attendance", transition: "slide-up", roles: ["Admin", "HR", "Employee"] }
+      meta: { 
+        requiresAuth: true, 
+        title: "Attendance Check", 
+        roles: ["Admin", "HR", "Employee"] 
+      }
     },
     {
-      path: "/attendance/leave",
+      path: "/attendance/leave-request",
+      name: "leave-request",
       component: LeaveRequestForm,
-      meta: { requiresAuth: true, title: "HRMS - Leave Request", transition: "slide-up", roles: ["Admin", "HR", "Employee", "Manager"] }
+      meta: { 
+        requiresAuth: true, 
+        title: "Leave Request", 
+        roles: ["Admin", "HR", "Employee"] 
+      }
+    },
+    {
+      path: "/attendance/reports",
+      name: "attendance-reports",
+      component: AttendanceReport,
+      meta: { 
+        requiresAuth: true, 
+        title: "Attendance Reports", 
+        roles: ["Admin", "HR", "Manager"] 
+      }
     },
     // Payroll
     {
       path: "/payroll",
+      name: "payroll",
       component: PayrollList,
-      meta: { requiresAuth: true, title: "HRMS - Payroll", transition: "slide-left", roles: ["Admin", "HR"] }
+      meta: { 
+        requiresAuth: true, 
+        title: "Payroll", 
+        roles: ["Admin", "HR"] 
+      }
     },
     // Performance
     {
       path: "/performance",
+      name: "performance",
       component: PerformanceReview,
-      meta: { requiresAuth: true, title: "HRMS - Performance", transition: "slide-down", roles: ["Admin", "HR", "Manager"] }
+      meta: { 
+        requiresAuth: true, 
+        title: "Performance Reviews", 
+        roles: ["Admin", "HR", "Manager"] 
+      }
+    },
+    {
+      path: "/performance/tasks",
+      name: "task-evaluation",
+      component: TaskEvaluation,
+      meta: { 
+        requiresAuth: true, 
+        title: "Task Evaluation", 
+        roles: ["Admin", "HR", "Manager", "Employee"] 
+      }
     },
     // Announcements
     {
       path: "/announcements",
+      name: "announcements",
       component: AnnouncementList,
-      meta: { requiresAuth: true, title: "HRMS - Announcements", transition: "fade", roles: ["Admin", "HR", "Employee", "Manager"] }
+      meta: { 
+        requiresAuth: true, 
+        title: "Announcements", 
+        roles: ["Admin", "HR", "Employee", "Manager"] 
+      }
     },
     // 404 - Not Found
     { 
       path: "*", 
       component: AppNotFound,
-      meta: { title: "HRMS - Page Not Found", transition: "fade" }
+      meta: { title: "Page Not Found" }
     }
   ],
   scrollBehavior(to, from, savedPosition) {
-    return savedPosition || { x: 0, y: 0 };
+    if (savedPosition) {
+      return savedPosition;
+    } else {
+      return { x: 0, y: 0 };
+    }
   }
 });
 
-// Route guards
 router.beforeEach((to, from, next) => {
-  document.title = to.meta.title || "HR Management System";
-
+  document.title = to.meta.title ? `${to.meta.title} | HRMS` : "HRMS";
+  
   const isAuthenticated = store.getters["auth/isAuthenticated"];
-  const userRole = store.getters["auth/userRole"];
-
-  // Redirect guest users trying to access protected routes
+  const userRole = store.getters["auth/userRole"] || "Guest";
+  
+  // Redirect to login if route requires auth and user is not authenticated
   if (to.meta.requiresAuth && !isAuthenticated) {
-    return next({ path: "/login", query: { redirect: to.fullPath } });
+    return next({
+      path: "/login",
+      query: { redirect: to.fullPath }
+    });
   }
-
-  // Redirect authenticated users trying to access guest-only routes
+  
+  // Redirect away from auth pages if already logged in
   if (to.meta.guestOnly && isAuthenticated) {
-    return next("/dashboard");
+    return next({ path: "/dashboard" });
   }
-
-  // Check role-based access
+  
+  // Check role permissions
   if (to.meta.roles && !to.meta.roles.includes(userRole)) {
-    return next(isAuthenticated ? "/dashboard" : "/login");
+    return next({ path: "/dashboard" });
   }
-
-  // Page transition animation
-  if (to.meta.transition) {
-    document.body.classList.add(`page-transition-${to.meta.transition}`);
-    setTimeout(() => document.body.classList.remove(`page-transition-${to.meta.transition}`), 500);
-  }
-
+  
   next();
 });
 

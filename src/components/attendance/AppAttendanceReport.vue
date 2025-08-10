@@ -265,7 +265,7 @@
     </div>
 
     <!-- Toast Notification -->
-    <AppToast 
+    <AppNotificationToast 
       :show="showToast" 
       :message="toastMessage" 
       :type="toastType" 
@@ -277,11 +277,11 @@
 <script>
 import axios from 'axios';
 import { Modal } from 'bootstrap';
-import AppToast from './AppToast.vue';
+import AppNotificationToast from '@/components/announcements/AppNotificationToast.vue';
 
 export default {
   name: "AppAttendanceReport",
-  components: { AppToast },
+  components: { AppNotificationToast },
   data() {
     const currentYear = new Date().getFullYear();
     return {

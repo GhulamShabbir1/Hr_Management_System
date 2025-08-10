@@ -67,8 +67,9 @@ export default {
     return {
       form: {
         title: "",
-        content: "",
+        message: "",
         date: "",
+        is_active: true
       },
     };
   },

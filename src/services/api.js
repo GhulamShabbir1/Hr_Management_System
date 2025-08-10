@@ -2,7 +2,7 @@ import axios from 'axios';
 import authService from './authService';  // Ensure this file exists
 
 const api = axios.create({
-  baseURL: process.env.VUE_APP_API_URL || 'https://api.yourhrms.com/v1',
+  baseURL: process.env.VUE_APP_API_URL || 'http://13.61.143.142/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

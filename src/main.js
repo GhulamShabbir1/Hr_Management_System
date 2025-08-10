@@ -3,69 +3,84 @@ import App from './App.vue';
 import router from './router';
 import store from './store';
 
-// Bootstrap only
+// BootstrapVue
 import { BootstrapVue, IconsPlugin } from 'bootstrap-vue';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-vue/dist/bootstrap-vue.css';
 
-// Your custom styles
+// Custom styles
 import '@/assets/css/custom.css';
 
-// Import your custom axios instance
+// Axios instance
 import api from '@/services/api';
+
+// Notifications
 import Notifications from 'vue-notification';
 Vue.use(Notifications);
 
+// Safe global notification method
+Vue.prototype.$notify = function (notification) {
+  if (this && this.$root) {
+    this.$root.$emit('show-notification', notification);
+  }
+};
 
+// Use BootstrapVue plugins
 Vue.use(BootstrapVue);
 Vue.use(IconsPlugin);
 
-// Config
+// Vue config
 Vue.config.productionTip = false;
 Vue.config.performance = process.env.NODE_ENV === 'development';
 
-// Global filters (optional)
+// Global date format filter
 Vue.filter('formatDate', (value) => {
   if (!value) return '';
   return new Date(value).toLocaleDateString();
 });
 
-// Initialize authentication state
-store.dispatch('auth/initializeAuth').then(() => {
-  setupAxiosInterceptors(store);
-});
-
 // Setup Axios interceptors
 function setupAxiosInterceptors(store) {
   api.interceptors.request.use(
-    config => {
+    (config) => {
       if (store.getters['auth/isAuthenticated']) {
         config.headers.Authorization = `Bearer ${store.state.auth.token}`;
       }
       return config;
     },
-    error => Promise.reject(error)
+    (error) => Promise.reject(error)
   );
 
   api.interceptors.response.use(
-    response => response,
-    error => {
+    (response) => response,
+    (error) => {
       if (error.response && error.response.status === 401) {
         store.dispatch('auth/logout');
-        router.push('/login');
+        if (router.currentRoute.path !== '/login') {
+          router.push('/login');
+        }
       }
       return Promise.reject(error);
     }
   );
 }
 
-// Vue error handler
+// Error handler with component info
 Vue.config.errorHandler = (err, vm, info) => {
   console.error('Vue error:', err, info);
+  if (vm && vm.$options) {
+    console.log('Component Name:', vm.$options.name || '(anonymous)');
+    console.log('Component Options:', vm.$options);
+  }
 };
 
-new Vue({
-  router,
-  store,
-  render: h => h(App)
-}).$mount('#app');
+// Initialize app
+store.dispatch('auth/initializeAuth').then(() => {
+  setupAxiosInterceptors(store);
+
+  new Vue({
+    router,
+    store,
+    render: (h) => h(App),
+  }).$mount('#app');
+});

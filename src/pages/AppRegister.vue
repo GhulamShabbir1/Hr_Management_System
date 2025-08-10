@@ -10,25 +10,18 @@
           <p class="logo-subtitle">Create your employee account</p>
         </div>
       </div>
-      
+
       <div class="card-body">
         <form @submit.prevent="handleRegister" class="register-form" novalidate>
+          <!-- Full Name -->
           <div class="form-group">
             <label for="name" class="form-label">Full Name</label>
             <div class="input-group">
               <span class="input-icon">
                 <i class="fas fa-user" aria-hidden="true"></i>
               </span>
-              <input
-                v-model="form.name"
-                type="text"
-                id="name"
-                class="form-control"
-                placeholder="Your full name"
-                required
-                @focus="resetError('name')"
-                aria-describedby="nameHelp"
-              />
+              <input v-model="form.name" type="text" id="name" class="form-control" placeholder="Your full name"
+                required @focus="resetError('name')" aria-describedby="nameHelp" />
             </div>
             <small id="nameHelp" class="form-text">As it appears on official documents</small>
             <p v-if="errors.name" class="error-text" role="alert">
@@ -37,22 +30,15 @@
             </p>
           </div>
 
+          <!-- Email -->
           <div class="form-group">
             <label for="email" class="form-label">Work Email</label>
             <div class="input-group">
               <span class="input-icon">
                 <i class="fas fa-envelope" aria-hidden="true"></i>
               </span>
-              <input
-                v-model="form.email"
-                type="email"
-                id="email"
-                class="form-control"
-                placeholder="you@company.com"
-                required
-                @focus="resetError('email')"
-                aria-describedby="emailHelp"
-              />
+              <input v-model="form.email" type="email" id="email" class="form-control" placeholder="you@company.com"
+                required @focus="resetError('email')" aria-describedby="emailHelp" />
             </div>
             <small id="emailHelp" class="form-text">Use your company email address</small>
             <p v-if="errors.email" class="error-text" role="alert">
@@ -61,28 +47,18 @@
             </p>
           </div>
 
+          <!-- Password -->
           <div class="form-group">
             <label for="password" class="form-label">Password</label>
             <div class="input-group">
               <span class="input-icon">
                 <i class="fas fa-lock" aria-hidden="true"></i>
               </span>
-              <input
-                v-model="form.password"
-                :type="showPassword ? 'text' : 'password'"
-                id="password"
-                class="form-control"
-                placeholder="Create password"
-                required
-                @focus="resetError('password')"
-                aria-describedby="passwordHelp"
-              />
-              <button 
-                type="button" 
-                class="password-toggle"
-                @click="togglePasswordVisibility"
-                aria-label="Toggle password visibility"
-              >
+              <input v-model="form.password" :type="showPassword ? 'text' : 'password'" id="password"
+                class="form-control" placeholder="Create password" required @focus="resetError('password')"
+                aria-describedby="passwordHelp" />
+              <button type="button" class="password-toggle" @click="togglePasswordVisibility"
+                aria-label="Toggle password visibility">
                 <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" aria-hidden="true"></i>
               </button>
             </div>
@@ -96,27 +72,18 @@
             </p>
           </div>
 
-          <div class="form-group">
+          <!-- Confirm Password -->
+          <!-- <div class="form-group">
             <label for="confirmPassword" class="form-label">Confirm Password</label>
             <div class="input-group">
               <span class="input-icon">
                 <i class="fas fa-lock" aria-hidden="true"></i>
               </span>
-              <input
-                v-model="form.confirmPassword"
-                :type="showConfirmPassword ? 'text' : 'password'"
-                id="confirmPassword"
-                class="form-control"
-                placeholder="Re-enter password"
-                required
-                @focus="resetError('confirmPassword')"
-              />
-              <button 
-                type="button" 
-                class="password-toggle"
-                @click="toggleConfirmPasswordVisibility"
-                aria-label="Toggle password visibility"
-              >
+              <input v-model="form.confirmPassword" :type="showConfirmPassword ? 'text' : 'password'"
+                id="confirmPassword" class="form-control" placeholder="Re-enter password" 
+                @focus="resetError('confirmPassword')" />
+              <button type="button" class="password-toggle" @click="toggleConfirmPasswordVisibility"
+                aria-label="Toggle password visibility">
                 <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" aria-hidden="true"></i>
               </button>
             </div>
@@ -124,36 +91,64 @@
               <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
               {{ errors.confirmPassword }}
             </p>
-          </div>
+          </div> -->
 
+          <!-- Phone Number -->
           <div class="form-group">
-            <label for="employeeId" class="form-label">Employee ID (Optional)</label>
+            <label for="phoneNo" class="form-label">Employee Phone No (Optional)</label>
             <div class="input-group">
               <span class="input-icon">
                 <i class="fas fa-id-card" aria-hidden="true"></i>
               </span>
-              <input
-                v-model="form.employeeId"
-                type="text"
-                id="employeeId"
-                class="form-control"
-                placeholder="Company employee ID"
-                @focus="resetError('employeeId')"
-              />
+              <input v-model="form.phoneNo" type="tel" id="phoneNo" class="form-control"
+                placeholder="Company employee phone number" @focus="resetError('phoneNo')" />
             </div>
             <small class="form-text">If provided by your HR department</small>
           </div>
 
+          <!-- Profile URL -->
+          <div class="form-group">
+            <label for="profileUrl" class="form-label">Profile URL (Optional)</label>
+            <div class="input-group">
+              <span class="input-icon">
+                <i class="fas fa-link" aria-hidden="true"></i>
+              </span>
+              <input v-model="form.profileUrl" type="url" id="profileUrl" class="form-control"
+                placeholder="https://example.com/profile" @focus="resetError('profileUrl')" />
+            </div>
+            <small class="form-text">Link to your professional profile (LinkedIn, portfolio, etc.)</small>
+            <p v-if="errors.profileUrl" class="error-text" role="alert">
+              <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+              {{ errors.profileUrl }}
+            </p>
+          </div>
+
+          <!-- Role -->
+          <div class="form-group">
+            <label for="role" class="form-label">Role</label>
+            <div class="input-group">
+              <span class="input-icon">
+                <i class="fas fa-user" aria-hidden="true"></i>
+              </span>
+              <select v-model="form.role" id="role" class="form-control" required @focus="resetError('role')">
+                <option value="" disabled selected>Select your role</option>
+                <option value="Employee">Employee</option>
+                <option value="Manager">Manager</option>
+                <option value="HR">HR</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+            <p v-if="errors.role" class="error-text" role="alert">
+              <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+              {{ errors.role }}
+            </p>
+          </div>
+
+          <!-- Terms -->
           <div class="form-check">
-            <input 
-              type="checkbox" 
-              id="termsAgreement" 
-              v-model="form.termsAgreed"
-              class="form-check-input"
-              required
-            >
+            <input type="checkbox" id="termsAgreement" v-model="form.termsAgreed" class="form-check-input" required>
             <label for="termsAgreement" class="form-check-label">
-              I agree to the <a href="#" @click.prevent="showTermsModal">Terms of Service</a> and 
+              I agree to the <a href="#" @click.prevent="showTermsModal">Terms of Service</a> and
               <a href="#" @click.prevent="showPrivacyModal">Privacy Policy</a>
             </label>
             <p v-if="errors.termsAgreed" class="error-text" role="alert">
@@ -162,15 +157,10 @@
             </p>
           </div>
 
-          <button
-            type="submit"
-            class="register-btn"
-            :disabled="isSubmitting"
-            aria-live="polite"
-          >
+          <!-- Submit -->
+          <button type="submit" class="register-btn" :disabled="isSubmitting" aria-live="polite">
             <span v-if="isSubmitting">
               <span class="spinner" aria-hidden="true"></span>
-              <span class="sr-only">Processing registration...</span>
               Creating Account...
             </span>
             <span v-else>
@@ -178,27 +168,16 @@
               Register Account
             </span>
           </button>
+         
+          <div class="divider"><span>or</span></div>
 
-          <div class="divider">
-            <span>or</span>
-          </div>
-
+          <!-- Social Login -->
           <div class="social-login">
-            <button 
-              type="button" 
-              class="social-btn google"
-              @click="socialLogin('google')"
-              aria-label="Register with Google"
-            >
+            <button type="button" class="social-btn google" @click="socialLogin('google')">
               <i class="fab fa-google" aria-hidden="true"></i>
               Continue with Google
             </button>
-            <button 
-              type="button" 
-              class="social-btn microsoft"
-              @click="socialLogin('microsoft')"
-              aria-label="Register with Microsoft"
-            >
+            <button type="button" class="social-btn microsoft" @click="socialLogin('microsoft')">
               <i class="fab fa-microsoft" aria-hidden="true"></i>
               Continue with Microsoft
             </button>
@@ -212,15 +191,14 @@
     </div>
 
     <!-- Terms Modal -->
-    <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal fade" id="termsModal" tabindex="-1">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h2 id="termsModalLabel" class="modal-title h5">Terms of Service</h2>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h2 class="modal-title h5">Terms of Service</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <!-- Terms content would go here -->
             <p>This HR Management System is provided for authorized company use only...</p>
           </div>
           <div class="modal-footer">
@@ -231,15 +209,14 @@
     </div>
 
     <!-- Privacy Modal -->
-    <div class="modal fade" id="privacyModal" tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
+    <div class="modal fade" id="privacyModal" tabindex="-1">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h2 id="privacyModalLabel" class="modal-title h5">Privacy Policy</h2>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h2 class="modal-title h5">Privacy Policy</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <!-- Privacy policy content would go here -->
             <p>We respect your privacy and are committed to protecting your personal data...</p>
           </div>
           <div class="modal-footer">
@@ -253,6 +230,7 @@
 
 <script>
 import { Modal } from 'bootstrap';
+import { mapActions } from 'vuex';
 
 export default {
   name: "AppRegister",
@@ -262,8 +240,9 @@ export default {
         name: "",
         email: "",
         password: "",
-        confirmPassword: "",
-        employeeId: "",
+        phoneNo: "",
+        profileUrl: "",
+        role: "",
         termsAgreed: false
       },
       errors: {},
@@ -294,13 +273,24 @@ export default {
     }
   },
   methods: {
+    ...mapActions('auth', ['register']),
+    
     validateEmail(email) {
       const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       return re.test(email);
     },
+    validateUrl(url) {
+      if (!url) return true; // Optional field
+      try {
+        new URL(url);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
     resetError(field) {
       if (this.errors[field]) {
-        this.errors = {...this.errors, [field]: null};
+        this.errors = { ...this.errors, [field]: null };
       }
     },
     togglePasswordVisibility() {
@@ -338,10 +328,19 @@ export default {
         this.errors.password = "Password must contain at least one number";
       }
 
-      if (!this.form.confirmPassword) {
-        this.errors.confirmPassword = "Please confirm your password";
-      } else if (this.form.password !== this.form.confirmPassword) {
-        this.errors.confirmPassword = "Passwords do not match";
+      // Commented out confirm password validation since the field is commented out
+      // if (!this.form.confirmPassword) {
+      //   this.errors.confirmPassword = "Please confirm your password";
+      // } else if (this.form.password !== this.form.confirmPassword) {
+      //   this.errors.confirmPassword = "Passwords do not match";
+      // }
+
+      if (this.form.profileUrl && !this.validateUrl(this.form.profileUrl)) {
+        this.errors.profileUrl = "Please enter a valid URL (e.g., https://example.com)";
+      }
+
+      if (!this.form.role) {
+        this.errors.role = "Role is required";
       }
 
       if (!this.form.termsAgreed) {
@@ -351,34 +350,81 @@ export default {
       return Object.keys(this.errors).length === 0;
     },
     async handleRegister() {
-      if (this.validateForm()) {
-        this.isSubmitting = true;
+      console.log('handleRegister called');
+      console.log('Form data:', this.form);
+      
+      if (!this.validateForm()) {
+        console.log('Form validation failed');
+        console.log('Errors:', this.errors);
+        return;
+      }
+
+      console.log('Form validation passed');
+      this.isSubmitting = true;
+      
+      try {
+        const registrationData = {
+          name: this.form.name,
+          email: this.form.email,
+          password: this.form.password,
+          phone: this.form.phoneNo,
+          profileUrl: this.form.profileUrl,
+          role: this.form.role
+        };
+
+        console.log('Registration data:', registrationData);
+        console.log('Calling register action...');
         
-        try {
-          // Simulate API call
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          
+        const result = await this.register(registrationData);
+        console.log('Register result:', result);
+        
+        if (result.success) {
+          // Show success message and redirect
           this.$notify({
             type: 'success',
-            title: 'Registration Successful',
-            text: 'Your account has been created! Please check your email to verify your account.'
+            title: 'Success',
+            text: 'Registration successful! Please login with your credentials.'
           });
           
-          this.$router.push("/login");
-        } catch (error) {
+          // Clear any existing auth data to ensure clean login flow
+          this.$store.commit('auth/LOGOUT');
+          
+          // Navigate to login page with success indicator
+          this.$router.push('/login?from=register');
+        } else {
           this.$notify({
             type: 'error',
             title: 'Registration Failed',
-            text: error.message || 'An error occurred during registration'
+            text: result.message || 'Registration failed. Please try again.'
           });
-        } finally {
-          this.isSubmitting = false;
         }
+        
+      } catch (error) {
+        console.error("Registration error:", error);
+        
+        let errorMessage = "Registration failed. Please try again.";
+        if (error.response) {
+          if (error.response.data && error.response.data.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.response.status === 409) {
+            errorMessage = "Email already registered";
+          }
+        }
+        
+        this.$notify({
+          type: 'error',
+          title: 'Registration Failed',
+          text: errorMessage
+        });
+        
+      } finally {
+        this.isSubmitting = false;
       }
     },
     socialLogin(provider) {
       console.log(`Social login with ${provider}`);
-      // In a real app, this would trigger OAuth flow
+      // In a real app, trigger OAuth flow
+      this.$toast.info(`${provider} login would be implemented in production`);
     }
   },
   mounted() {
@@ -389,207 +435,149 @@ export default {
 </script>
 
 <style scoped>
+/* Basic container */
 .register-container {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  align-items: center;
+  background: #f5f7fa;
   padding: 2rem;
-  position: relative;
 }
 
+/* Card */
 .register-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   width: 100%;
   max-width: 500px;
-  background: white;
-  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  transform: translateY(0);
-  transition: all 0.3s ease;
-  z-index: 1;
 }
 
-.register-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-}
-
+/* Header */
 .card-header {
-  background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
-  color: white;
-  padding: 2.5rem 2rem;
   text-align: center;
-}
-
-.logo-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  padding: 2rem 1rem;
+  border-bottom: 1px solid #eaeaea;
 }
 
 .logo-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
-
-.logo-icon i {
-  font-size: 1.8rem;
+  font-size: 3rem;
+  color: #4a90e2;
 }
 
 .logo-title {
-  margin: 0;
-  font-weight: 600;
   font-size: 1.8rem;
+  font-weight: 600;
+  margin-top: 1rem;
 }
 
 .logo-subtitle {
-  margin: 0.5rem 0 0;
+  color: #777;
   font-size: 0.9rem;
-  opacity: 0.9;
-  font-weight: 300;
 }
 
+/* Body */
 .card-body {
-  padding: 2.5rem 2rem;
+  padding: 2rem;
 }
 
-.register-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
+/* Form */
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-label {
+  display: block;
+  margin-bottom: 0.4rem;
   font-weight: 500;
-  color: #2c3e50;
-  font-size: 0.95rem;
 }
 
 .input-group {
-  position: relative;
   display: flex;
   align-items: center;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.5rem;
 }
 
 .input-icon {
-  position: absolute;
-  left: 1rem;
-  color: #6c757d;
-  font-size: 1rem;
+  margin-right: 0.5rem;
+  color: #777;
 }
 
 .form-control {
-  padding: 0.75rem 1rem 0.75rem 3rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  border: none;
+  flex: 1;
+  outline: none;
   font-size: 1rem;
-  width: 100%;
 }
 
-.form-control:focus {
-  border-color: #4ca1af;
-  box-shadow: 0 0 0 3px rgba(76, 161, 175, 0.2);
-  outline: none;
+select.form-control {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1em;
 }
 
 .password-toggle {
-  position: absolute;
-  right: 1rem;
-  background: none;
+  background: transparent;
   border: none;
-  color: #6c757d;
+  color: #777;
   cursor: pointer;
-  font-size: 1rem;
 }
 
-.password-toggle:hover {
-  color: #2c3e50;
-}
-
-.form-text {
-  font-size: 0.8rem;
-  color: #6c757d;
-}
-
+/* Password strength */
 .password-strength {
-  font-size: 0.8rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  margin-top: 0.25rem;
-  text-align: center;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
 }
 
 .strength-weak {
-  background-color: #ffe3e3;
-  color: #c92a2a;
+  color: #e53935;
 }
 
 .strength-medium {
-  background-color: #fff3bf;
-  color: #e67700;
+  color: #fb8c00;
 }
 
 .strength-good {
-  background-color: #d3f9d8;
-  color: #2b8a3e;
+  color: #039be5;
 }
 
 .strength-strong {
-  background-color: #d0ebff;
-  color: #1864ab;
+  color: #43a047;
 }
 
+/* Errors */
 .error-text {
-  color: #ff4757;
+  color: #e53935;
   font-size: 0.85rem;
-  margin-top: 0.25rem;
+  margin-top: 0.3rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  animation: shake 0.5s ease;
+  gap: 0.3rem;
 }
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-5px); }
-  40%, 80% { transform: translateX(5px); }
-}
-
+/* Terms */
 .form-check {
+  margin: 1.5rem 0;
   display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  margin: 1rem 0;
+  align-items: center;
 }
 
 .form-check-input {
-  margin-top: 0.2rem;
+  margin-right: 0.5rem;
 }
 
 .form-check-label {
   font-size: 0.9rem;
-  color: #495057;
-  cursor: pointer;
 }
 
 .form-check-label a {
-  color: #4ca1af;
+  color: #4a90e2;
   text-decoration: none;
 }
 
@@ -597,115 +585,134 @@ export default {
   text-decoration: underline;
 }
 
+/* Submit */
 .register-btn {
-  background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
-  color: white;
+  width: 100%;
+  padding: 0.75rem;
+  background: #4a90e2;
+  color: #fff;
   border: none;
-  padding: 1rem;
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: all 0.3s ease;
 }
 
-.register-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4ca1af 0%, #2c3e50 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+.register-btn:hover {
+  background: #357ab8;
+  transform: translateY(-1px);
+}
+
+.register-btn:active {
+  transform: translateY(0);
 }
 
 .register-btn:disabled {
-  opacity: 0.7;
+  background: #b0bec5;
   cursor: not-allowed;
+  transform: none;
 }
 
+/* Spinner */
 .spinner {
+  display: inline-block;
   width: 1rem;
   height: 1rem;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
-  border-top-color: white;
+  border-top-color: #fff;
   animation: spin 1s ease-in-out infinite;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
+/* Divider */
 .divider {
-  display: flex;
-  align-items: center;
-  color: #6c757d;
-  font-size: 0.9rem;
-  margin: 1rem 0;
   text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+  color: #777;
+  font-size: 0.9rem;
 }
 
-.divider::before,
-.divider::after {
-  content: "";
-  flex: 1;
-  border-bottom: 1px solid #ddd;
+.divider span {
+  background: #fff;
+  padding: 0 1rem;
+  position: relative;
+  z-index: 1;
 }
 
 .divider::before {
-  margin-right: 1rem;
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: #ddd;
+  z-index: 0;
 }
 
-.divider::after {
-  margin-left: 1rem;
-}
-
+/* Social buttons */
 .social-login {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.8rem;
 }
 
 .social-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: opacity 0.3s, transform 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid #ddd;
-  background: white;
+  gap: 0.5rem;
 }
 
 .social-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.social-btn:active {
+  transform: translateY(0);
 }
 
 .social-btn.google {
-  color: #DB4437;
-  border-color: #DB4437;
+  background: #db4437;
+  color: #fff;
 }
 
 .social-btn.microsoft {
-  color: #00A4EF;
-  border-color: #00A4EF;
+  background: #2f2f2f;
+  color: #fff;
 }
 
+/* Login link */
 .login-link {
   text-align: center;
   margin-top: 1.5rem;
   font-size: 0.9rem;
-  color: #495057;
+  color: #555;
 }
 
 .login-link a {
-  color: #4ca1af;
+  color: #4a90e2;
   text-decoration: none;
   font-weight: 500;
 }
@@ -714,42 +721,13 @@ export default {
   text-decoration: underline;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
+/* URL input specific styles */
+.input-icon.fa-link {
+  color: #4a90e2;
 }
 
-/* Responsive adjustments */
-@media (max-width: 576px) {
-  .register-container {
-    padding: 1rem;
-  }
-  
-  .card-header {
-    padding: 1.5rem 1rem;
-  }
-  
-  .card-body {
-    padding: 1.5rem 1rem;
-  }
-  
-  .logo-title {
-    font-size: 1.5rem;
-  }
-  
-  .logo-subtitle {
-    font-size: 0.8rem;
-  }
-  
-  .social-btn {
-    font-size: 0.85rem;
-  }
+/* Phone number input */
+input[type="tel"] {
+  padding: 0.5rem;
 }
 </style>

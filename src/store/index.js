@@ -1,15 +1,17 @@
-// store/index.js
 import Vue from "vue";
 import Vuex from "vuex";
-import createPersistedState from "vuex-persistedstate";
 
 // Import modules
-import auth from "./modules/auth";
-import employees from "./modules/employees";
+import announcements from "./modules/announcements";
 import attendance from "./modules/attendance";
+import auth from "./modules/auth";
+import departments from "./modules/departments";
+import employees from "./modules/employees";
 import payroll from "./modules/payroll";
 import performance from "./modules/performance";
-import announcements from "./modules/announcements";
+import reports from "./modules/reports";
+import settings from "./modules/settings";
+import taskevaluation from "./modules/taskevaluation";
 
 Vue.use(Vuex);
 
@@ -18,20 +20,13 @@ export default new Vuex.Store({
     auth,           // Authentication & user management
     employees,      // Employee management
     attendance,     // Attendance tracking
+    departments,    // Department management
     payroll,        // Payroll processing
     performance,    // Performance reviews
-    announcements   // Company announcements
+    announcements,  // Company announcements
+    reports,        // Reports and analytics
+    settings,       // Application settings
+    taskevaluation  // Task evaluation
   },
-  plugins: [
-    createPersistedState({
-      key: "hrms-vuex",
-      paths: [
-        "auth.token",
-        "auth.user",
-        "auth.refreshToken"
-      ],
-      storage: window.localStorage
-    })
-  ],
   strict: process.env.NODE_ENV !== "production"
 });

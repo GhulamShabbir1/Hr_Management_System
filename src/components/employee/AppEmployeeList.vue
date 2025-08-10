@@ -2,34 +2,55 @@
   <div class="container-fluid p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2 class="h2 text-primary mb-0">Employee Management</h2>
-      <button 
-        @click="openForm()" 
-        class="btn btn-success"
-      >
+      <button @click="openForm()" class="btn btn-success">
         <i class="bi bi-person-plus me-2"></i> Add Employee
       </button>
     </div>
 
     <!-- Employee Form Modal -->
-    <AppEmployeeForm
-      v-if="showForm"
-      :employee="selectedEmployee"
-      @save="saveEmployee"
-      @close="closeForm"
-      @error="showError"
-    />
+    <div v-if="showForm" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">
+            {{ selectedEmployee ? 'Edit Employee' : 'Add New Employee' }}
+          </h5>
+          <button @click="closeForm" class="btn-close btn-close-white"></button>
+        </div>
+        <div class="modal-body">
+          <AppEmployeeForm :employee="selectedEmployee" @save="saveEmployee" @close="closeForm" @error="showError" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteModal" class="modal-overlay">
+      <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">Confirm Delete</h5>
+          <button @click="closeDeleteModal" class="btn-close btn-close-white"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete <strong>{{ employeeToDelete?.name }}</strong> (ID: {{ employeeToDelete?.id
+            }})?</p>
+          <p class="text-danger">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+          <button @click="closeDeleteModal" class="btn btn-secondary">
+            Cancel
+          </button>
+          <button @click="deleteEmployeeConfirm" class="btn btn-danger">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Filters Card -->
     <div class="card p-4 mb-4 filter-card">
       <div class="row g-3 align-items-end">
         <div class="col-md-4">
           <label class="form-label">Search</label>
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            class="form-control" 
-            placeholder="Search by name, email or role"
-          >
+          <input v-model="searchQuery" type="text" class="form-control" placeholder="Search by name, email or role">
         </div>
         <div class="col-md-3">
           <label class="form-label">Role</label>
@@ -50,10 +71,7 @@
           </select>
         </div>
         <div class="col-md-2">
-          <button 
-            @click="resetFilters" 
-            class="btn btn-outline-secondary w-100"
-          >
+          <button @click="resetFilters" class="btn btn-outline-secondary w-100">
             Reset
           </button>
         </div>
@@ -62,61 +80,16 @@
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
-      <div class="col-md-3">
-        <div class="card stat-card stat-card-1 h-100">
+      <div class="col-md-3" v-for="(value, key) in stats" :key="key">
+        <div class="card stat-card h-100">
           <div class="card-body">
             <div class="d-flex justify-content-between">
               <div>
-                <h6 class="text-muted">Total Employees</h6>
-                <h4 class="mb-0">{{ stats.totalEmployees }}</h4>
+                <h6 class="text-muted">{{ statLabels[key] }}</h6>
+                <h4 class="mb-0">{{ value }}</h4>
               </div>
               <div class="stat-icon">
-                <i class="bi bi-people-fill"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card stat-card stat-card-2 h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="text-muted">Active</h6>
-                <h4 class="mb-0">{{ stats.activeEmployees }}</h4>
-              </div>
-              <div class="stat-icon">
-                <i class="bi bi-person-check"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card stat-card stat-card-3 h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="text-muted">Managers</h6>
-                <h4 class="mb-0">{{ stats.managers }}</h4>
-              </div>
-              <div class="stat-icon">
-                <i class="bi bi-person-badge"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card stat-card stat-card-4 h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="text-muted">HR Staff</h6>
-                <h4 class="mb-0">{{ stats.hrStaff }}</h4>
-              </div>
-              <div class="stat-icon">
-                <i class="bi bi-person-vcard"></i>
+                <i :class="statIcons[key]"></i>
               </div>
             </div>
           </div>
@@ -144,9 +117,7 @@
               <td>{{ employee.id }}</td>
               <td>
                 <div class="d-flex align-items-center">
-                  <div class="avatar me-2">
-                    {{ getInitials(employee.name) }}
-                  </div>
+                  <div class="avatar me-2">{{ getInitials(employee.name) }}</div>
                   <div>
                     <div class="fw-bold">{{ employee.name }}</div>
                     <small class="text-muted">{{ employee.position }}</small>
@@ -165,38 +136,25 @@
               </td>
               <td>
                 <span class="badge" :class="employee.active ? 'bg-success' : 'bg-secondary'">
-                  {{ employee.active ? 'Active' : 'Inactive' }}
+                  {{ employee.active ? 'active' : 'inactive' }}
                 </span>
               </td>
               <td>
                 <div class="d-flex gap-2">
-                  <button 
-                    @click="toggleStatus(employee.id)" 
-                    class="btn btn-sm"
-                    :class="employee.active ? 'btn-warning' : 'btn-success'"
-                    :title="employee.active ? 'Deactivate' : 'Activate'"
-                  >
-                    <i class="bi" :class="employee.active ? 'bi-person-x' : 'bi-person-check'"></i>
+                  <button @click="editEmployee(employee)" class="btn btn-sm btn-primary" title="Edit">
+                    <i class="bi bi-pencil">Edit</i>
                   </button>
-                  <button 
-                    @click="editEmployee(employee)" 
-                    class="btn btn-sm btn-primary"
-                    title="Edit"
-                  >
-                    <i class="bi bi-pencil"></i>
+                  <button @click="viewEmployee(employee)" class="btn btn-sm btn-info" title="View">
+                    <i class="bi bi-eye">View</i>
                   </button>
-                  <button 
-                    @click="viewEmployee(employee.id)" 
-                    class="btn btn-sm btn-info"
-                    title="View"
-                  >
-                    <i class="bi bi-eye"></i>
+                  <button @click="confirmDelete(employee)" class="btn btn-sm btn-danger" title="Delete">
+                    <i class="bi bi-trash">Delete</i>
                   </button>
                 </div>
               </td>
             </tr>
             <tr v-if="filteredEmployees.length === 0">
-              <td colspan="7" class="text-center py-4 text-muted">
+              <td colspan="7" class="text-center py-3 text-muted">
                 <i class="bi bi-people fs-4"></i>
                 <p class="mt-2 mb-0">No employees found matching your criteria</p>
               </td>
@@ -209,22 +167,13 @@
       <nav v-if="totalPages > 1" class="mt-4">
         <ul class="pagination justify-content-center">
           <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <button class="page-link" @click="prevPage" :disabled="currentPage === 1">
-              &laquo;
-            </button>
+            <button class="page-link" @click="prevPage" :disabled="currentPage === 1">&laquo;</button>
           </li>
-          <li 
-            v-for="page in totalPages" 
-            :key="page" 
-            class="page-item" 
-            :class="{ active: currentPage === page }"
-          >
+          <li v-for="page in totalPages" :key="page" class="page-item" :class="{ active: currentPage === page }">
             <button class="page-link" @click="goToPage(page)">{{ page }}</button>
           </li>
           <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages">
-              &raquo;
-            </button>
+            <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages">&raquo;</button>
           </li>
         </ul>
       </nav>
@@ -232,31 +181,23 @@
 
     <!-- Export Button -->
     <div class="d-flex justify-content-end mt-3">
-      <button 
-        @click="exportToExcel" 
-        class="btn btn-primary"
-        :disabled="loadingExport || filteredEmployees.length === 0"
-      >
+      <button @click="exportToExcel" class="btn btn-primary"
+        :disabled="loadingExport || filteredEmployees.length === 0">
         <span v-if="loadingExport" class="spinner-border spinner-border-sm me-2"></span>
         <i class="bi bi-file-earmark-excel me-2"></i> Export to Excel
       </button>
     </div>
 
     <!-- Toast Notification -->
-    <AppNotificationToast 
-      :show="showToast" 
-      :message="toastMessage" 
-      :type="toastType" 
-      @close="showToast = false"
-    />
+    <AppNotificationToast :show="showToast" :message="toastMessage" :type="toastType" @close="showToast = false" />
   </div>
 </template>
 
 <script>
 import { mapActions, mapGetters } from "vuex";
-import axios from 'axios';
-import AppEmployeeForm from "./AppEmployeeForm.vue";
+import * as XLSX from "xlsx";
 import AppNotificationToast from "../announcements/AppNotificationToast.vue";
+import AppEmployeeForm from "./AppEmployeeForm.vue";
 
 export default {
   name: "EmployeeList",
@@ -264,7 +205,9 @@ export default {
   data() {
     return {
       showForm: false,
+      showDeleteModal: false,
       selectedEmployee: null,
+      employeeToDelete: null,
       searchQuery: '',
       roleFilter: 'all',
       statusFilter: 'all',
@@ -279,320 +222,360 @@ export default {
         activeEmployees: 0,
         managers: 0,
         hrStaff: 0
+      },
+      statLabels: {
+        totalEmployees: "Total Employees",
+        activeEmployees: "Active",
+        managers: "Managers",
+        hrStaff: "HR Staff"
+      },
+      statIcons: {
+        totalEmployees: "bi bi-people-fill",
+        activeEmployees: "bi bi-person-check",
+        managers: "bi bi-person-badge",
+        hrStaff: "bi bi-person-vcard"
       }
     };
   },
   computed: {
     ...mapGetters("employees", ["employees"]),
+
     filteredEmployees() {
-      let filtered = this.employees;
-      
-      // Apply search filter
+      let filtered = [...this.employees];
+
+      // Search
       if (this.searchQuery) {
         const query = this.searchQuery.toLowerCase();
-        filtered = filtered.filter(emp => 
-          emp.name.toLowerCase().includes(query) ||
-          emp.email.toLowerCase().includes(query) ||
-          emp.role.toLowerCase().includes(query)
+        filtered = filtered.filter(emp =>
+          emp.name?.toLowerCase().includes(query) ||
+          emp.email?.toLowerCase().includes(query) ||
+          emp.role?.toLowerCase().includes(query)
         );
       }
-      
-      // Apply role filter
-      if (this.roleFilter !== 'all') {
-        filtered = filtered.filter(emp => emp.role === this.roleFilter);
-      }
-      
-      // Apply status filter
-      if (this.statusFilter !== 'all') {
-        const activeFilter = this.statusFilter === 'active';
-        filtered = filtered.filter(emp => emp.active === activeFilter);
-      }
-      
-      // Update stats
+
+      // Role filter
+      if (this.roleFilter !== 'all') filtered = filtered.filter(emp => emp.role === this.roleFilter);
+      // Status filter
+      if (this.statusFilter !== 'all') filtered = filtered.filter(emp => emp.active === (this.statusFilter === 'active'));
+
+      // Update stats dynamically
       this.updateStats(filtered);
-      
+
       // Pagination
       const start = (this.currentPage - 1) * this.perPage;
       const end = this.currentPage * this.perPage;
-      
       return filtered.slice(start, end);
     },
+
     totalPages() {
-      let filtered = this.employees;
-      
+      let filtered = [...this.employees];
+
       if (this.searchQuery) {
         const query = this.searchQuery.toLowerCase();
-        filtered = filtered.filter(emp => 
-          emp.name.toLowerCase().includes(query) ||
-          emp.email.toLowerCase().includes(query) ||
-          emp.role.toLowerCase().includes(query)
+        filtered = filtered.filter(emp =>
+          emp.name?.toLowerCase().includes(query) ||
+          emp.email?.toLowerCase().includes(query) ||
+          emp.role?.toLowerCase().includes(query)
         );
       }
-      
-      if (this.roleFilter !== 'all') {
-        filtered = filtered.filter(emp => emp.role === this.roleFilter);
-      }
-      
-      if (this.statusFilter !== 'all') {
-        const activeFilter = this.statusFilter === 'active';
-        filtered = filtered.filter(emp => emp.active === activeFilter);
-      }
-      
-      return Math.ceil(filtered.length / this.perPage);
+
+      if (this.roleFilter !== 'all') filtered = filtered.filter(emp => emp.role === this.roleFilter);
+      if (this.statusFilter !== 'all') filtered = filtered.filter(emp => emp.active === (this.statusFilter === 'active'));
+
+      return Math.ceil(filtered.length / this.perPage) || 1;
     }
   },
   methods: {
-    ...mapActions("employees", ["fetchEmployees", "toggleStatus", "addEmployee", "updateEmployee"]),
+    ...mapActions("employees", ["fetchEmployees", "deleteEmployee", "addEmployee", "updateEmployee"]),
+
     openForm(employee = null) {
-      this.selectedEmployee = employee;
+      this.selectedEmployee = employee ? { ...employee } : null;
       this.showForm = true;
+      document.body.classList.add('modal-open');
     },
+
     closeForm() {
       this.showForm = false;
       this.selectedEmployee = null;
+      document.body.classList.remove('modal-open');
     },
+
     async saveEmployee(employee) {
       try {
         if (employee.id) {
-          await this.updateEmployee({ id: employee.id, data: employee });
-          this.showNotification('Employee updated successfully');
+          await this.updateEmployee(employee);
+          this.toastMessage = "Employee updated successfully!";
         } else {
           await this.addEmployee(employee);
-          this.showNotification('Employee added successfully');
+          this.toastMessage = "Employee added successfully!";
         }
-        this.closeForm();
-        await this.fetchEmployees();
+        this.toastType = "success";
+        await this.fetchEmployees(); // Refresh the list
       } catch (error) {
-        this.showNotification(error.response?.data?.message || 'Operation failed', 'error');
+        this.toastMessage = error.message || "Failed to save employee!";
+        this.toastType = "danger";
+      } finally {
+        this.showToast = true;
+        this.closeForm();
       }
     },
-    editEmployee(employee) {
-      this.openForm({ ...employee });
-    },
-    viewEmployee(id) {
-      this.$router.push(`/employees/${id}`);
-    },
+
     showError(message) {
-      this.showNotification(message, 'error');
-    },
-    showNotification(message, type = 'success') {
       this.toastMessage = message;
-      this.toastType = type;
+      this.toastType = "danger";
       this.showToast = true;
     },
-    getInitials(name) {
-      return name.split(' ').map(n => n[0]).join('').toUpperCase();
+
+    editEmployee(employee) {
+      this.openForm(employee);
     },
-    roleClass(role) {
-      switch (role) {
-        case 'Admin': return 'bg-danger';
-        case 'HR': return 'bg-primary';
-        case 'Manager': return 'bg-warning text-dark';
-        default: return 'bg-secondary';
+
+    viewEmployee(employee) {
+      alert(`Viewing Employee:\n\nName: ${employee.name}\nEmail: ${employee.email}\nRole: ${employee.role}\nStatus: ${employee.active ? 'Active' : 'Inactive'}`);
+    },
+
+    confirmDelete(employee) {
+      this.employeeToDelete = employee;
+      this.showDeleteModal = true;
+      document.body.classList.add('modal-open');
+    },
+
+    closeDeleteModal() {
+      this.showDeleteModal = false;
+      this.employeeToDelete = null;
+      document.body.classList.remove('modal-open');
+    },
+
+    async deleteEmployeeConfirm() {
+      if (!this.employeeToDelete) return;
+
+      try {
+        await this.deleteEmployee(this.employeeToDelete.id);
+        this.toastMessage = `${this.employeeToDelete.name} deleted successfully!`;
+        this.toastType = "success";
+        await this.fetchEmployees(); // Refresh the list
+      } catch (error) {
+        this.toastMessage = `Failed to delete ${this.employeeToDelete.name}!`;
+        this.toastType = "danger";
+      } finally {
+        this.showToast = true;
+        this.closeDeleteModal();
       }
     },
-    updateStats(employees) {
-      this.stats.totalEmployees = employees.length;
-      this.stats.activeEmployees = employees.filter(e => e.active).length;
-      this.stats.managers = employees.filter(e => e.role === 'Manager').length;
-      this.stats.hrStaff = employees.filter(e => e.role === 'HR').length;
-    },
+
     resetFilters() {
       this.searchQuery = '';
       this.roleFilter = 'all';
       this.statusFilter = 'all';
       this.currentPage = 1;
     },
-    prevPage() {
-      if (this.currentPage > 1) this.currentPage--;
-    },
-    nextPage() {
-      if (this.currentPage < this.totalPages) this.currentPage++;
-    },
-    goToPage(page) {
-      this.currentPage = page;
-    },
-    async exportToExcel() {
-      this.loadingExport = true;
-      try {
-        const params = {
-          search: this.searchQuery,
-          role: this.roleFilter !== 'all' ? this.roleFilter : null,
-          status: this.statusFilter !== 'all' ? this.statusFilter : null
-        };
 
-        const response = await axios.get('/api/employees/export', {
-          params,
-          responseType: 'blob'
-        });
-        
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `employees_export_${new Date().toISOString()}.xlsx`);
-        document.body.appendChild(link);
-        link.click();
-        this.showNotification('Export started successfully');
+    updateStats(list) {
+      const employeeList = Array.isArray(list) ? list : [];
+      this.stats = {
+        totalEmployees: employeeList.length,
+        activeEmployees: employeeList.filter(e => e.active).length,
+        managers: employeeList.filter(e => e.role === 'Manager').length,
+        hrStaff: employeeList.filter(e => e.role === 'HR').length
+      };
+    },
+
+    roleClass(role) {
+      return {
+        Employee: 'bg-secondary',
+        Manager: 'bg-primary',
+        HR: 'bg-info',
+        Admin: 'bg-dark'
+      }[role] || 'bg-light';
+    },
+
+    getInitials(name) {
+      return name ? name.split(' ').map(n => n[0]).join('').toUpperCase() : '';
+    },
+
+    prevPage() { if (this.currentPage > 1) this.currentPage--; },
+    nextPage() { if (this.currentPage < this.totalPages) this.currentPage++; },
+    goToPage(page) { this.currentPage = page; },
+
+    async exportToExcel() {
+      try {
+        this.loadingExport = true;
+        const data = (Array.isArray(this.employees) ? this.employees : []).map(emp => ({
+          ID: emp.id,
+          Name: emp.name,
+          Email: emp.email,
+          Phone: emp.phone || 'N/A',
+          Department: emp.department || 'N/A',
+          Role: emp.role,
+          Position: emp.position || 'N/A',
+          Status: emp.active ? 'Active' : 'Inactive',
+          HireDate: emp.hireDate || 'N/A'
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Employees");
+        XLSX.writeFile(workbook, `Employees_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        this.toastMessage = "Export successful!";
+        this.toastType = "success";
       } catch (error) {
-        console.error('Export error:', error);
-        this.showNotification('Export failed', 'error');
+        this.toastMessage = "Failed to export data!";
+        this.toastType = "danger";
       } finally {
+        this.showToast = true;
         this.loadingExport = false;
       }
     }
   },
-  async created() {
-    await this.fetchEmployees();
-    this.updateStats(this.employees);
+
+  async mounted() {
+    try {
+      await this.fetchEmployees();
+      this.updateStats(this.employees);
+    } catch (error) {
+      this.showError(error.message || "Failed to load employees!");
+    }
   }
 };
 </script>
 
 <style scoped>
-.filter-card {
-  background-color: #f8f9fa;
-  border-radius: 0.5rem;
-  border: 1px solid #dee2e6;
-}
-
-.stat-card {
-  border: none;
-  border-radius: 0.5rem;
-  transition: transform 0.2s;
-}
-
-.stat-card:hover {
-  transform: translateY(-3px);
-}
-
-.stat-card-1 {
-  background-color: #e3f2fd;
-}
-
-.stat-card-2 {
-  background-color: #e8f5e9;
-}
-
-.stat-card-3 {
-  background-color: #fff3e0;
-}
-
-.stat-card-4 {
-  background-color: #f3e5f5;
-}
-
-.stat-icon {
-  font-size: 2rem;
-  opacity: 0.7;
-}
-
 .avatar {
-  width: 36px;
-  height: 36px;
+  background: #0d6efd;
+  color: #fff;
   border-radius: 50%;
-  background-color: #0d6efd;
-  color: white;
+  width: 35px;
+  height: 35px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
 }
 
+.stat-card {
+  border-left: 5px solid #0d6efd;
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+}
+
+.stat-icon {
+  font-size: 2rem;
+  color: #0d6efd;
+  opacity: 0.7;
+}
+
+.filter-card {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
+  background-color: #ffffff;
+  border-radius: 12px;
+  width: 95%;
+  max-width: 900px;
+  min-height: 200px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 0.3s ease-out;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: visible;
+  max-height: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  padding: 1rem;
+  border-bottom: 1px solid #dee2e6;
+  border-top-left-radius: calc(0.3rem - 1px);
+  border-top-right-radius: calc(0.3rem - 1px);
+}
+
+.modal-body {
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: 1rem;
+  border-top: 1px solid #dee2e6;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Table Styles */
 .table th {
   white-space: nowrap;
+  position: relative;
 }
 
-.table-hover tbody tr:hover {
-  background-color: rgba(13, 110, 253, 0.05);
+.table td {
+  vertical-align: middle;
 }
 
-.badge {
-  padding: 0.5em 0.75em;
+/* Action buttons */
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
 }
 
-.btn-warning {
-  background-color: #ffc107;
-  border-color: #ffc107;
-  color: #212529;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+
+  .filter-card .col-md-4,
+  .filter-card .col-md-3,
+  .filter-card .col-md-2 {
+    margin-bottom: 1rem;
+  }
+
+  .stat-card {
+    margin-bottom: 1rem;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
-.btn-success {
-  background-color: #198754;
-  border-color: #198754;
-}
-
-.btn-primary {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-}
-
-.btn-info {
-  background-color: #0dcaf0;
-  border-color: #0dcaf0;
-}
-
-.btn-outline-secondary {
-  border-color: #6c757d;
-  color: #6c757d;
-}
-
-.btn-outline-secondary:hover {
-  background-color: #6c757d;
-  color: white;
-}
-
-.text-primary {
-  color: #0d6efd !important;
-}
-
-.text-muted {
-  color: #6c757d !important;
-}
-
-.bg-primary {
-  background-color: #0d6efd !important;
-}
-
-.bg-success {
-  background-color: #198754 !important;
-}
-
-.bg-danger {
-  background-color: #dc3545 !important;
-}
-
-.bg-warning {
-  background-color: #ffc107 !important;
-  color: #212529;
-}
-
-.bg-secondary {
-  background-color: #6c757d !important;
-}
-
-.table-primary {
-  background-color: #0d6efd;
-  color: white;
-}
-
-.page-item.active .page-link {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-}
-
-.page-link {
-  color: #0d6efd;
-}
-
-.empty-state {
-  color: #6c757d;
-}
-
-.empty-state i {
-  font-size: 2.5rem;
-}
-
-.btn-close-white {
-  filter: invert(1) grayscale(100%) brightness(200%);
+/* Body scroll lock when modal is open */
+.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
 }
 </style>

@@ -20,7 +20,7 @@
     <div class="d-flex gap-3 mb-4">
       <button
         @click="checkIn"
-        :disabled="attendance.checkedIn || loading"
+        :disabled="hasCheckedIn || loading"
         class="btn btn-success px-4 py-2"
       >
         <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
@@ -29,7 +29,7 @@
       </button>
       <button
         @click="checkOut"
-        :disabled="!attendance.checkedIn || attendance.checkedOut || loading"
+        :disabled="!hasCheckedIn || hasCheckedOut || loading"
         class="btn btn-danger px-4 py-2"
       >
         <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
@@ -50,18 +50,18 @@
       <h3 class="h4 mb-3">Today's Attendance Record</h3>
       <div class="row">
         <div class="col-md-6">
-          <p><strong>Check-in Time:</strong> {{ attendance.checkInTime || 'Not recorded' }}</p>
+          <p><strong>Check-in Time:</strong> {{ todayCheckIn || 'Not recorded' }}</p>
           <p><strong>Status:</strong> 
-            <span class="badge" :class="attendance.checkedIn ? 'bg-success' : 'bg-secondary'">
-              {{ attendance.checkedIn ? 'Checked In' : 'Not Checked In' }}
+            <span class="badge" :class="hasCheckedIn ? 'bg-success' : 'bg-secondary'">
+              {{ hasCheckedIn ? 'Checked In' : 'Not Checked In' }}
             </span>
           </p>
         </div>
         <div class="col-md-6">
-          <p><strong>Check-out Time:</strong> {{ attendance.checkOutTime || 'Not recorded' }}</p>
+          <p><strong>Check-out Time:</strong> {{ todayCheckOut || 'Not recorded' }}</p>
           <p><strong>Status:</strong> 
-            <span class="badge" :class="attendance.checkedOut ? 'bg-danger' : 'bg-secondary'">
-              {{ attendance.checkedOut ? 'Checked Out' : 'Not Checked Out' }}
+            <span class="badge" :class="hasCheckedOut ? 'bg-danger' : 'bg-secondary'">
+              {{ hasCheckedOut ? 'Checked Out' : 'Not Checked Out' }}
             </span>
           </p>
         </div>
@@ -84,7 +84,7 @@
           </button>
         </div>
       </div>
-      
+
       <div class="table-responsive">
         <table class="table table-hover">
           <thead class="table-primary">
@@ -97,7 +97,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(record, index) in attendanceHistory" :key="index">
+            <tr v-for="(record, index) in filteredRecords" :key="index">
               <td>{{ formatDate(record.date) }}</td>
               <td>{{ record.checkInTime || '-' }}</td>
               <td>{{ record.checkOutTime || '-' }}</td>
@@ -124,7 +124,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import { mapActions, mapGetters, mapState } from 'vuex';
 import AppNotificationToast from '../announcements/AppNotificationToast.vue';
 
 export default {
@@ -138,105 +138,157 @@ export default {
       loading: false,
       showToast: false,
       toastMessage: "",
-      toastType: "success",
-      attendance: {
-        checkedIn: false,
-        checkedOut: false,
-        checkInTime: null,
-        checkOutTime: null,
-        date: null
-      },
-      attendanceHistory: []
+      toastType: "success"
     };
+  },
+  computed: {
+    ...mapState('attendance', ['records']),
+    ...mapGetters('attendance', ['getAttendanceByEmployee']),
+    
+    // Get current user ID from auth store
+    currentUserId() {
+      return this.$store.state.auth.user?.id;
+    },
+    
+    // Filter records for current user
+    filteredRecords() {
+      return this.getAttendanceByEmployee(this.currentUserId);
+    },
+    
+    // Today's check-in record
+    todayRecord() {
+      const today = new Date().toISOString().split('T')[0];
+      return this.filteredRecords.find(r => r.date === today);
+    },
+    
+    todayCheckIn() {
+      return this.todayRecord?.checkInTime;
+    },
+    
+    todayCheckOut() {
+      return this.todayRecord?.checkOutTime;
+    },
+    
+    hasCheckedIn() {
+      return !!this.todayCheckIn;
+    },
+    
+    hasCheckedOut() {
+      return !!this.todayCheckOut;
+    }
   },
   created() {
     this.updateDateTime();
     setInterval(this.updateDateTime, 1000);
-    this.fetchTodayAttendance();
-    this.fetchAttendanceHistory();
+    this.fetchAttendanceRecords();
   },
   methods: {
+    ...mapActions('attendance', ['fetchAttendance', 'markAttendance']),
+    
     updateDateTime() {
       const now = new Date();
       this.currentTime = now.toLocaleTimeString();
       this.currentDate = now.toLocaleDateString();
     },
-    async fetchTodayAttendance() {
+    
+    async fetchAttendanceRecords() {
       try {
-        const response = await axios.get('/api/attendance/today');
-        this.attendance = response.data.data || this.attendance;
+        await this.fetchAttendance();
       } catch (error) {
         this.showNotification('Failed to fetch attendance data', 'error');
       }
     },
-    async fetchAttendanceHistory() {
-      try {
-        const response = await axios.get(`/api/attendance/history?date=${this.dateFilter}`);
-        this.attendanceHistory = response.data.data;
-      } catch (error) {
-        this.showNotification('Failed to fetch attendance history', 'error');
-      }
-    },
+    
     async checkIn() {
       this.loading = true;
       try {
-        const response = await axios.post('/api/attendance/check-in');
-        this.attendance = response.data.data;
+        const today = new Date().toISOString().split('T')[0];
+        await this.markAttendance({
+          employeeId: this.currentUserId,
+          date: today,
+          status: 'check-in'
+        });
         this.showNotification('Checked in successfully!');
-        this.fetchAttendanceHistory();
       } catch (error) {
         this.showNotification(error.response?.data?.message || 'Check-in failed', 'error');
       } finally {
         this.loading = false;
       }
     },
+    
     async checkOut() {
       this.loading = true;
       try {
-        const response = await axios.post('/api/attendance/check-out');
-        this.attendance = response.data.data;
+        const today = new Date().toISOString().split('T')[0];
+        await this.markAttendance({
+          employeeId: this.currentUserId,
+          date: today,
+          status: 'check-out'
+        });
         this.showNotification('Checked out successfully!');
-        this.fetchAttendanceHistory();
       } catch (error) {
         this.showNotification(error.response?.data?.message || 'Check-out failed', 'error');
       } finally {
         this.loading = false;
       }
     },
+    
     async exportToExcel() {
       try {
-        const response = await axios.get('/api/attendance/export', {
-          responseType: 'blob'
-        });
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        // This would be an API call to your backend export endpoint
+        // Using mock implementation for demonstration
+        const data = this.filteredRecords;
+        const headers = ['Date', 'Check-in', 'Check-out', 'Status', 'Hours'];
+        const csvContent = [
+          headers.join(','),
+          ...data.map(item => [
+            item.date,
+            item.checkInTime || '-',
+            item.checkOutTime || '-',
+            this.getStatusText(item),
+            this.calculateHours(item)
+          ].join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `attendance_${this.dateFilter}.xlsx`);
+        link.setAttribute('download', `attendance_${this.dateFilter}.csv`);
         document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
+        
         this.showNotification('Export started successfully');
       } catch (error) {
         this.showNotification('Export failed', 'error');
       }
     },
+    
     formatDate(dateString) {
       return new Date(dateString).toLocaleDateString();
     },
+    
     calculateHours(record) {
       if (!record.checkInTime || !record.checkOutTime) return '-';
-      // Implement hours calculation logic
-      return '8.5'; // Placeholder
+      const inTime = new Date(`1970-01-01T${record.checkInTime}`);
+      const outTime = new Date(`1970-01-01T${record.checkOutTime}`);
+      const diff = (outTime - inTime) / (1000 * 60 * 60);
+      return diff.toFixed(2);
     },
+    
     getStatusClass(record) {
       if (!record.checkInTime) return 'bg-secondary';
       if (!record.checkOutTime) return 'bg-warning';
       return 'bg-success';
     },
+    
     getStatusText(record) {
       if (!record.checkInTime) return 'Absent';
       if (!record.checkOutTime) return 'Pending Check-out';
       return 'Completed';
     },
+    
     showNotification(message, type = 'success') {
       this.toastMessage = message;
       this.toastType = type;
@@ -247,18 +299,8 @@ export default {
 </script>
 
 <style scoped>
-.time-card {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 0.5rem;
-}
-
-.summary-card {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 0.5rem;
-}
-
+.time-card,
+.summary-card,
 .history-card {
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;

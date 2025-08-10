@@ -1,200 +1,217 @@
 <template>
-  <div class="modal-backdrop">
-    <div class="modal-content" style="max-width: 500px;">
-      <div class="modal-header bg-primary text-white">
-        <h3 class="modal-title">
-          <i class="bi" :class="mode === 'edit' ? 'bi-cash-stack' : 'bi-cash-coin'"></i>
-          {{ mode === 'edit' ? 'Edit Payroll Record' : 'Create New Payroll' }}
-        </h3>
-        <button type="button" class="btn-close btn-close-white" @click="$emit('close')" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form @submit.prevent="save">
-          <div class="mb-3">
-            <label class="form-label">Employee</label>
-            <input type="text" v-model="localData.name" class="form-control" :disabled="mode === 'edit'"
-              placeholder="Select employee">
-          </div>
+  <form @submit.prevent="handleSubmit">
+    <!-- Error display -->
+    <div v-if="errors.length" class="alert alert-danger mb-3">
+      <ul class="mb-0">
+        <li v-for="(error, index) in errors" :key="index">{{ error }}</li>
+      </ul>
+    </div>
 
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">Pay Period</label>
-              <select v-model="localData.period" class="form-select" required>
-                <option value="" disabled>Select Pay Period</option>
-                <option value="Monthly">Monthly</option>
-                <option value="Bi-Weekly">Bi-Weekly</option>
-                <option value="Weekly">Weekly</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Payment Date</label>
-              <input type="date" v-model="localData.paymentDate" class="form-control" required :max="today">
-            </div>
-          </div>
+    <!-- Payroll ID (visible in edit mode only) -->
+    <div class="mb-3" v-if="mode === 'edit'">
+      <label class="form-label">Payroll ID</label>
+      <input
+        v-model="formData.id"
+        type="text"
+        class="form-control"
+        readonly
+        disabled
+      >
+    </div>
 
-          <div class="card mt-4 mb-3">
-            <div class="card-header bg-light">
-              <h6 class="mb-0">Salary Details</h6>
-            </div>
-            <div class="card-body">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Basic Salary</label>
-                  <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" v-model.number="localData.basic" class="form-control" min="0" step="0.01"
-                      required>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Overtime</label>
-                  <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" v-model.number="localData.overtime" class="form-control" min="0" step="0.01">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card mb-3">
-            <div class="card-header bg-light">
-              <h6 class="mb-0">Bonuses & Allowances</h6>
-            </div>
-            <div class="card-body">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Performance Bonus</label>
-                  <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" v-model.number="localData.bonus" class="form-control" min="0" step="0.01">
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Allowances</label>
-                  <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" v-model.number="localData.allowance" class="form-control" min="0" step="0.01">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card mb-4">
-            <div class="card-header bg-light">
-              <h6 class="mb-0">Deductions</h6>
-            </div>
-            <div class="card-body">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Tax</label>
-                  <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" v-model.number="localData.tax" class="form-control" min="0" step="0.01">
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Other Deductions</label>
-                  <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" v-model.number="localData.deduction" class="form-control" min="0" step="0.01">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="alert alert-info">
-            <div class="d-flex justify-content-between">
-              <span class="fw-bold">Net Salary:</span>
-              <span class="fw-bold">${{ calculateNetSalary }}</span>
-            </div>
-          </div>
-
-          <div class="d-flex justify-content-end gap-2 mt-3">
-            <button type="button" @click="$emit('close')" class="btn btn-outline-secondary">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary" :disabled="loading">
-              <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-              {{ mode === 'edit' ? 'Update' : 'Create' }} Payroll
-            </button>
-          </div>
-        </form>
+    <div class="mb-3">
+      <label class="form-label required-field">Employee ID</label>
+      <input
+        v-model.number="formData.user_id"
+        type="number"
+        class="form-control"
+        :class="{ 'is-invalid': fieldErrors.user_id }"
+        required
+        min="1"
+      >
+      <div v-if="fieldErrors.user_id" class="invalid-feedback">
+        {{ fieldErrors.user_id[0] }}
       </div>
     </div>
-  </div>
+
+    <div class="mb-3">
+      <label class="form-label required-field">Basic Pay</label>
+      <input 
+        v-model.number="formData.basic_pay" 
+        type="number" 
+        class="form-control"
+        :class="{ 'is-invalid': fieldErrors.basic_pay }" 
+        required 
+        min="0" 
+        step="0.01"
+      >
+      <div v-if="fieldErrors.basic_pay" class="invalid-feedback">
+        {{ fieldErrors.basic_pay[0] }}
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Bonuses</label>
+      <input 
+        v-model.number="formData.bonuses" 
+        type="number" 
+        class="form-control" 
+        min="0" 
+        step="0.01"
+      >
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label required-field">Net Salary</label>
+      <input 
+        v-model.number="formData.net_salary" 
+        type="number" 
+        class="form-control" 
+        required 
+        min="0" 
+        step="0.01"
+      >
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label required-field">Pay Date</label>
+      <input 
+        v-model="formData.pay_date" 
+        type="date" 
+        class="form-control"
+        :class="{ 'is-invalid': fieldErrors.pay_date }" 
+        required
+      >
+      <div v-if="fieldErrors.pay_date" class="invalid-feedback">
+        {{ fieldErrors.pay_date[0] }}
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+      <button type="button" class="btn btn-secondary" @click="$emit('cancel')">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary" :disabled="loading">
+        <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
+        {{ mode === 'add' ? 'Add' : 'Update' }} Payroll
+      </button>
+    </div>
+  </form>
 </template>
 
 <script>
 export default {
-  name: "AppPayrollForm",
   props: {
-    employee: {
-      type: Object,
-      default: () => ({
-        name: "",
-        basic: 0,
-        bonus: 0,
-        deduction: 0,
-        overtime: 0,
-        allowance: 0,
-        tax: 0,
-        period: "Monthly",
-        paymentDate: new Date().toISOString().split('T')[0]
-      })
-    },
-    mode: { type: String, default: "add" } // add or edit
+    payroll: Object,
+    mode: String,
+    apiErrors: Object
   },
   data() {
-    const today = new Date().toISOString().split('T')[0];
     return {
-      today,
-      loading: false,
-      localData: {
-        ...this.employee,
-        overtime: this.employee.overtime || 0,
-        allowance: this.employee.allowance || 0,
-        tax: this.employee.tax || 0,
-        period: this.employee.period || "Monthly",
-        paymentDate: this.employee.paymentDate || today
-      }
+      formData: {
+        id: null,
+        user_id: "",
+        basic_pay: 0,
+        bonuses: 0,
+        net_salary: 0,
+        pay_date: new Date().toISOString().split('T')[0]
+      },
+      errors: [],
+      fieldErrors: {},
+      loading: false
     };
   },
-  computed: {
-    calculateNetSalary() {
-      const basic = parseFloat(this.localData.basic) || 0;
-      const bonus = parseFloat(this.localData.bonus) || 0;
-      const overtime = parseFloat(this.localData.overtime) || 0;
-      const allowance = parseFloat(this.localData.allowance) || 0;
-      const deduction = parseFloat(this.localData.deduction) || 0;
-      const tax = parseFloat(this.localData.tax) || 0;
-
-      return (basic + bonus + overtime + allowance - deduction - tax).toFixed(2);
+  watch: {
+    payroll: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal) {
+          this.formData = {
+            id: newVal.id || null,
+            user_id: newVal.user_id || newVal['User ID'] || "",
+            basic_pay: parseFloat(newVal.basic_pay || newVal['Basic Pay'] || 0),
+            bonuses: parseFloat(newVal.bonuses || newVal['Bonuses'] || 0),
+            net_salary: parseFloat(newVal.net_salary || newVal['Net Salary'] || 0),
+            pay_date: newVal.pay_date || newVal['Pay Date'] || new Date().toISOString().split('T')[0]
+          };
+        } else {
+          this.resetForm();
+        }
+      }
+    },
+    apiErrors: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal && newVal.errors) {
+          this.fieldErrors = newVal.errors;
+          this.errors = ['Please fix the validation errors'];
+        } else {
+          this.fieldErrors = {};
+          this.errors = [];
+        }
+      }
     }
   },
   methods: {
-    save() {
+    resetForm() {
+      this.formData = {
+        id: null,
+        user_id: "",
+        basic_pay: 0,
+        bonuses: 0,
+        net_salary: 0,
+        pay_date: new Date().toISOString().split('T')[0]
+      };
+      this.errors = [];
+      this.fieldErrors = {};
+    },
+    validateForm() {
+      const requiredFields = ['user_id', 'basic_pay', 'net_salary', 'pay_date'];
+      let isValid = true;
+      
+      requiredFields.forEach(field => {
+        if (!this.formData[field]) {
+          this.fieldErrors = {
+            ...this.fieldErrors,
+            [field]: [`The ${field.replace('_', ' ')} field is required.`]
+          };
+          isValid = false;
+        }
+      });
+
+      if (!isValid) {
+        this.errors = ['Please fill all required fields'];
+      }
+
+      return isValid;
+    },
+    async handleSubmit() {
       this.loading = true;
+      this.errors = [];
+      this.fieldErrors = {};
+
+      if (!this.validateForm()) {
+        this.loading = false;
+        return;
+      }
+
       try {
-        // Validate payment date
-        if (new Date(this.localData.paymentDate) > new Date()) {
-          throw new Error('Payment date cannot be in the future');
+        const payload = {
+          user_id: this.formData.user_id.toString(),
+          basic_pay: this.formData.basic_pay.toString(),
+          bonuses: this.formData.bonuses.toString(),
+          net_salary: this.formData.net_salary.toString(),
+          pay_date: this.formData.pay_date
+        };
+
+        if (this.mode === 'edit' && this.formData.id) {
+          payload.id = this.formData.id.toString();
         }
 
-        // Validate basic salary
-        if (this.localData.basic <= 0) {
-          throw new Error('Basic salary must be greater than 0');
-        }
-
-        // Emit the form data to parent
-        this.$emit("save", {
-          ...this.localData,
-          netSalary: this.calculateNetSalary
-        });
+        this.$emit('save', payload);
       } catch (error) {
-        this.$emit("error", error.message);
+        this.errors = ['Failed to prepare form data'];
+        console.error('Form submission error:', error);
       } finally {
         this.loading = false;
       }
@@ -202,6 +219,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .modal-backdrop {
@@ -307,5 +325,12 @@ export default {
 
 .btn-close-white {
   filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Style for readonly Payroll ID field */
+input[readonly] {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+  opacity: 0.8;
 }
 </style>
