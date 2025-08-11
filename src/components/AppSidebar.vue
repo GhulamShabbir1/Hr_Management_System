@@ -39,51 +39,75 @@
             :key="`${item.path}-${index}`"
             class="nav-item"
           >
-            <router-link
-              :to="item.path"
-              class="nav-link"
-              :class="{
-                active: isActive(item.path),
-                'has-notification': showNotification(item)
-              }"
-              @click.native="handleNavClick"
-              :aria-current="isActive(item.path) ? 'page' : null"
-            >
-              <i :class="item.icon" class="nav-icon"></i>
-              <span class="nav-text">{{ item.label }}</span>
-              <span
-                v-if="showNotification(item)"
-                class="notification-badge"
-                aria-label="New notifications"
-              ></span>
-              <i
-                v-if="item.children"
-                class="fas fa-chevron-down toggle-submenu"
-                :class="{ 'rotate': isSubmenuOpen(item) }"
-                @click.stop="toggleSubmenu(item)"
-              ></i>
-            </router-link>
+            <!-- Parent with children: toggle only; no navigation -->
+            <template v-if="item.children && item.children.length">
+              <button
+                type="button"
+                class="nav-link"
+                :class="{
+                  active: isAnyChildActive(item),
+                  'has-notification': showNotification(item)
+                }"
+                @click="toggleSubmenu(item)"
+                :aria-expanded="isSubmenuOpen(item)"
+                aria-haspopup="true"
+              >
+                <i :class="item.icon" class="nav-icon"></i>
+                <span class="nav-text">{{ item.label }}</span>
+                <span
+                  v-if="showNotification(item)"
+                  class="notification-badge"
+                  aria-label="New notifications"
+                ></span>
+                <i
+                  class="fas fa-chevron-down toggle-submenu"
+                  :class="{ 'rotate': isSubmenuOpen(item) }"
+                ></i>
+              </button>
 
-            <!-- Submenu Items -->
-            <transition name="slide">
-              <ul v-if="item.children && isSubmenuOpen(item)" class="submenu">
-                <li
-                  v-for="(child, childIndex) in item.children"
-                  :key="`${child.path}-${childIndex}`"
-                  class="submenu-item"
-                >
-                  <router-link
-                    :to="child.path"
-                    class="submenu-link"
-                    :class="{ active: isActive(child.path) }"
-                    @click.native="handleNavClick"
+              <!-- Submenu Items -->
+              <transition name="slide">
+                <ul v-if="isSubmenuOpen(item)" class="submenu">
+                  <li
+                    v-for="(child, childIndex) in item.children"
+                    :key="`${child.path}-${childIndex}`"
+                    class="submenu-item"
                   >
-                    <i :class="child.icon" class="submenu-icon"></i>
-                    <span>{{ child.label }}</span>
-                  </router-link>
-                </li>
-              </ul>
-            </transition>
+                    <router-link
+                      :to="child.path"
+                      class="submenu-link"
+                      :class="{ active: isActive(child.path) }"
+                      @click.native="handleNavClick"
+                    >
+                      <i :class="child.icon" class="submenu-icon"></i>
+                      <span>{{ child.label }}</span>
+                    </router-link>
+                  </li>
+                </ul>
+              </transition>
+            </template>
+
+            <!-- Item without children: navigate normally -->
+            <template v-else>
+              <router-link
+                :to="item.path"
+                class="nav-link"
+                :class="{
+                  active: isActive(item.path),
+                  'has-notification': showNotification(item)
+                }"
+                @click.native="handleNavClick"
+                :aria-current="isActive(item.path) ? 'page' : null"
+              >
+                <i :class="item.icon" class="nav-icon"></i>
+                <span class="nav-text">{{ item.label }}</span>
+                <span
+                  v-if="showNotification(item)"
+                  class="notification-badge"
+                  aria-label="New notifications"
+                ></span>
+              </router-link>
+            </template>
           </li>
         </ul>
       </div>
@@ -124,7 +148,7 @@ export default {
           label: "Dashboard",
           path: "/dashboard",
           icon: "fas fa-tachometer-alt",
-          roles: ["Admin", "HR", "Employee"],
+          roles: ["Admin", "HR", "Employee", "Manager"],
           notification: false
         },
         {
@@ -190,7 +214,7 @@ export default {
           label: "Announcements",
           path: "/announcements",
           icon: "fas fa-bullhorn",
-          roles: ["Admin", "HR", "Employee"],
+          roles: ["Admin", "HR", "Employee", "Manager"],
           notification: false
         }
       ],
@@ -205,7 +229,7 @@ export default {
     filteredMenuItems() {
       if (!this.userRole) return [];
       return this.menuItems
-        .filter((item) => item.roles.includes(this.userRole))
+        .filter((item) => item.roles?.includes(this.userRole))
         .map((item) => {
           if (item.children) {
             return {
@@ -235,8 +259,12 @@ export default {
     isActive(path) {
       return this.$route.path.startsWith(path);
     },
+    isAnyChildActive(item) {
+      if (!item?.children?.length) return false;
+      return item.children.some((c) => this.isActive(c.path));
+    },
     showNotification(item) {
-      return item.notification;
+      return !!item.notification;
     },
     isSubmenuOpen(item) {
       return this.openSubmenus.includes(item.path);
@@ -271,19 +299,29 @@ export default {
       if (!this.isMobile) {
         this.isMobileVisible = false;
       }
+    },
+    ensureParentOpenForRoute(path) {
+      // Open the parent group for the current route if it matches a child
+      for (const item of this.menuItems) {
+        if (item.children && item.children.some((child) => path.startsWith(child.path))) {
+          if (!this.openSubmenus.includes(item.path)) {
+            this.openSubmenus.push(item.path);
+          }
+        }
+      }
+    }
+  },
+  watch: {
+    "$route.path"(newPath) {
+      this.ensureParentOpenForRoute(newPath);
     }
   },
   mounted() {
     this.checkScreenSize();
     window.addEventListener("resize", this.checkScreenSize);
 
-    // Open submenu if current route is a child
-    const currentPath = this.$route.path;
-    for (const item of this.menuItems) {
-      if (item.children && item.children.some((child) => currentPath.startsWith(child.path))) {
-        this.openSubmenus.push(item.path);
-      }
-    }
+    // Initialize open submenu based on current route
+    this.ensureParentOpenForRoute(this.$route.path);
   },
   beforeDestroy() {
     window.removeEventListener("resize", this.checkScreenSize);
@@ -368,38 +406,10 @@ export default {
   background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
 }
 
-.brand-container {
-  margin-bottom: 1.5rem;
-  position: relative;
-}
-
-.brand-title {
-  color: #f8f9fa;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-  font-size: 1.5rem;
-  letter-spacing: 0.5px;
-  display: flex;
-  align-items: center;
-}
-
-.brand-title::before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background: #adb5bd;
-  border-radius: 50%;
-  margin-right: 10px;
-}
-
-.brand-subtitle {
-  color: rgba(248, 249, 250, 0.7);
-  font-size: 0.8rem;
-  margin-bottom: 0;
-  font-weight: 300;
-  letter-spacing: 0.5px;
-}
+.brand-container { margin-bottom: 1.5rem; position: relative; }
+.brand-title { color: #f8f9fa; font-weight: 700; margin-bottom: 0.25rem; font-size: 1.5rem; letter-spacing: 0.5px; display: flex; align-items: center; }
+.brand-title::before { content: ''; display: inline-block; width: 8px; height: 8px; background: #adb5bd; border-radius: 50%; margin-right: 10px; }
+.brand-subtitle { color: rgba(248, 249, 250, 0.7); font-size: 0.8rem; margin-bottom: 0; font-weight: 300; letter-spacing: 0.5px; }
 
 .user-info {
   display: flex;
@@ -411,66 +421,15 @@ export default {
   transition: var(--sidebar-transition);
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
+.user-info:hover { background: rgba(52, 58, 64, 0.8); border-color: rgba(108, 117, 125, 0.3); }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #6c757d, #495057); color: #f8f9fa; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 0.75rem; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+.user-details { overflow: hidden; }
+.user-name { margin-bottom: 0.2rem; font-size: 0.9rem; color: #f8f9fa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.user-role { background: rgba(248, 249, 250, 0.15); color: #f8f9fa; font-weight: normal; font-size: 0.7rem; padding: 0.25rem 0.5rem; border-radius: 50px; text-transform: capitalize; }
 
-.user-info:hover {
-  background: rgba(52, 58, 64, 0.8);
-  border-color: rgba(108, 117, 125, 0.3);
-}
-
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #6c757d, #495057);
-  color: #f8f9fa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  margin-right: 0.75rem;
-  flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.user-details {
-  overflow: hidden;
-}
-
-.user-name {
-  margin-bottom: 0.2rem;
-  font-size: 0.9rem;
-  color: #f8f9fa;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 500;
-}
-
-.user-role {
-  background: rgba(248, 249, 250, 0.15);
-  color: #f8f9fa;
-  font-weight: normal;
-  font-size: 0.7rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 50px;
-  text-transform: capitalize;
-}
-
-.menu-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem 0;
-}
-
-.nav {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.nav-item {
-  position: relative;
-}
+.menu-container { flex: 1; overflow-y: auto; padding: 1rem 0; }
+.nav { list-style: none; padding: 0; margin: 0; }
+.nav-item { position: relative; }
 
 .nav-link {
   color: var(--sidebar-color);
@@ -483,241 +442,73 @@ export default {
   border-left: 4px solid transparent;
   margin: 0.15rem 0.5rem;
   border-radius: 6px;
+  width: 100%;
+  text-align: left;
 }
-
-.nav-link:hover {
-  color: #212529;
-  background: var(--sidebar-hover-bg);
-  transform: translateX(4px);
-}
-
-.nav-link.active {
-  background: var(--sidebar-active-bg);
-  color: #212529;
-  border-left-color: #6c757d;
-  font-weight: 500;
-}
-
+.nav-link:hover { color: #212529; background: var(--sidebar-hover-bg); transform: translateX(4px); }
+.nav-link.active { background: var(--sidebar-active-bg); color: #212529; border-left-color: #6c757d; font-weight: 500; }
 .nav-link.has-notification::after {
-  content: '';
-  position: absolute;
-  right: 1.5rem;
-  width: 8px;
-  height: 8px;
-  background: var(--sidebar-notification);
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--sidebar-bg);
-  animation: pulse 2s infinite;
+  content: ''; position: absolute; right: 1.5rem; width: 8px; height: 8px; background: var(--sidebar-notification); border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--sidebar-bg); animation: pulse 2s infinite;
 }
 
-.nav-icon {
-  margin-right: 0.75rem;
-  width: 1.25rem;
-  text-align: center;
-  font-size: 0.9rem;
-  color: #6c757d;
-}
+.nav-icon { margin-right: 0.75rem; width: 1.25rem; text-align: center; font-size: 0.9rem; color: #6c757d; }
+.toggle-submenu { margin-left: auto; transition: transform 0.3s ease; font-size: 0.8rem; color: #6c757d; }
+.toggle-submenu.rotate { transform: rotate(180deg); }
 
-.toggle-submenu {
-  margin-left: auto;
-  transition: transform 0.3s ease;
-  font-size: 0.8rem;
-  color: #6c757d;
-}
-
-.toggle-submenu.rotate {
-  transform: rotate(180deg);
-}
-
-/* Submenu Styles */
-.submenu {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 0 1rem;
-  background: transparent;
-  border-left: 1px dashed #dee2e6;
-}
-
-.submenu-item {
-  border-left: 4px solid transparent;
-}
-
+/* Submenu */
+.submenu { list-style: none; padding: 0; margin: 0 0 0 1rem; background: transparent; border-left: 1px dashed #dee2e6; }
+.submenu-item { border-left: 4px solid transparent; }
 .submenu-link {
-  display: flex;
-  align-items: center;
-  padding: 0.7rem 1rem 0.7rem 2.5rem;
-  color: #6c757d;
-  text-decoration: none;
-  transition: var(--sidebar-transition);
-  position: relative;
-  border-radius: 4px;
-  margin: 0.1rem 0;
+  display: flex; align-items: center; padding: 0.7rem 1rem 0.7rem 2.5rem;
+  color: #6c757d; text-decoration: none; transition: var(--sidebar-transition);
+  position: relative; border-radius: 4px; margin: 0.1rem 0;
 }
-
-.submenu-link:hover {
-  color: #495057;
-  background: var(--sidebar-submenu-bg);
-}
-
-.submenu-link.active {
-  color: #495057;
-  background: var(--sidebar-submenu-bg);
-  font-weight: 500;
-}
-
+.submenu-link:hover { color: #495057; background: var(--sidebar-submenu-bg); }
+.submenu-link.active { color: #495057; background: var(--sidebar-submenu-bg); font-weight: 500; }
 .submenu-link.active::before {
-  content: '';
-  position: absolute;
-  left: -5px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 8px;
-  height: 8px;
-  background: #6c757d;
-  border-radius: 50%;
+  content: ''; position: absolute; left: -5px; top: 50%; transform: translateY(-50%);
+  width: 8px; height: 8px; background: #6c757d; border-radius: 50%;
 }
+.submenu-icon { margin-right: 0.75rem; font-size: 0.8rem; width: 1rem; text-align: center; color: #adb5bd; }
 
-.submenu-icon {
-  margin-right: 0.75rem;
-  font-size: 0.8rem;
-  width: 1rem;
-  text-align: center;
-  color: #adb5bd;
-}
+/* Slide transition */
+.slide-enter-active, .slide-leave-active { transition: all 0.3s ease; max-height: 500px; }
+.slide-enter, .slide-leave-to { opacity: 0; max-height: 0; }
 
-/* Slide transition for submenu */
-.slide-enter-active, .slide-leave-active {
-  transition: all 0.3s ease;
-  max-height: 500px;
-}
-
-.slide-enter, .slide-leave-to {
-  opacity: 0;
-  max-height: 0;
-}
-
-/* Sidebar Footer */
-.sidebar-footer {
-  padding: 1rem;
-  background: var(--sidebar-footer-bg);
-  text-align: center;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  position: relative;
-}
-
+/* Footer */
+.sidebar-footer { padding: 1rem; background: var(--sidebar-footer-bg); text-align: center; border-top: 1px solid rgba(0, 0, 0, 0.1); position: relative; }
 .btn-logout {
-  width: calc(100% - 2rem);
-  background: #495057;
-  color: #f8f9fa;
-  border: none;
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  margin: 0 auto 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: calc(100% - 2rem); background: #495057; color: #f8f9fa; border: none; padding: 0.6rem 1rem; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; margin: 0 auto 0.75rem; font-weight: 500;
+  letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-
-.btn-logout:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  background: #343a40;
-}
-
-.btn-logout i {
-  margin-right: 0.5rem;
-}
-
-.sidebar-version {
-  font-size: 0.7rem;
-  color: rgba(248, 249, 250, 0.5);
-  letter-spacing: 0.5px;
-}
+.btn-logout:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); background: #343a40; }
+.btn-logout i { margin-right: 0.5rem; }
+.sidebar-version { font-size: 0.7rem; color: rgba(248, 249, 250, 0.5); letter-spacing: 0.5px; }
 
 /* Overlay for mobile */
-.sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1020;
-  backdrop-filter: blur(2px);
-}
+.sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1020; backdrop-filter: blur(2px); }
 
 /* Animations */
 @keyframes pulse {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
-  }
-  70% {
-    transform: scale(1.1);
-    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-  }
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
 }
+@keyframes fadeIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+.nav-item { animation: fadeIn 0.3s ease forwards; opacity: 0; }
+.nav-item:nth-child(1){animation-delay:.1s;} .nav-item:nth-child(2){animation-delay:.15s;}
+.nav-item:nth-child(3){animation-delay:.2s;} .nav-item:nth-child(4){animation-delay:.25s;}
+.nav-item:nth-child(5){animation-delay:.3s;} .nav-item:nth-child(6){animation-delay:.35s;}
+.nav-item:nth-child(7){animation-delay:.4s;} .nav-item:nth-child(8){animation-delay:.45s;}
 
-/* Fade-in animation for sidebar */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.nav-item {
-  animation: fadeIn 0.3s ease forwards;
-  opacity: 0;
-}
-
-.nav-item:nth-child(1) { animation-delay: 0.1s; }
-.nav-item:nth-child(2) { animation-delay: 0.15s; }
-.nav-item:nth-child(3) { animation-delay: 0.2s; }
-.nav-item:nth-child(4) { animation-delay: 0.25s; }
-.nav-item:nth-child(5) { animation-delay: 0.3s; }
-.nav-item:nth-child(6) { animation-delay: 0.35s; }
-.nav-item:nth-child(7) { animation-delay: 0.4s; }
-.nav-item:nth-child(8) { animation-delay: 0.45s; }
-
-/* Responsive Styles */
 @media (max-width: 768px) {
-  .mobile-menu-toggle {
-    display: flex;
-  }
-
-  .sidebar {
-    transform: translateX(-100%);
-    box-shadow: none;
-  }
-
-  .sidebar.mobile-visible {
-    transform: translateX(0);
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
-  }
-
-  .sidebar-header {
-    padding: 1rem;
-  }
-
-  .nav-link {
-    padding: 0.75rem 1rem;
-  }
-
-  .submenu-link {
-    padding-left: 2.5rem;
-  }
+  .mobile-menu-toggle { display: flex; }
+  .sidebar { transform: translateX(-100%); box-shadow: none; }
+  .sidebar.mobile-visible { transform: translateX(0); box-shadow: 10px 0 30px rgba(0,0,0,0.1); }
+  .sidebar-header { padding: 1rem; }
+  .nav-link { padding: 0.75rem 1rem; }
+  .submenu-link { padding-left: 2.5rem; }
 }
 </style>

@@ -1,187 +1,304 @@
 <template>
-  <div class="container-fluid p-4">
-    <h2 class="h2 text-primary mb-4">Leave Management</h2>
+  <div class="task-evaluator-container animate__animated animate__fadeIn">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="evaluator-title">
+        <i class="bi bi-star me-2" aria-hidden="true"></i>
+        Performance & Task Management
+      </h2>
+      <div class="d-flex gap-2">
+        <button @click="refreshAll" class="btn btn-sm btn-outline-secondary" :disabled="loading" aria-label="Refresh">
+          <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+        </button>
+        <button @click="openNewTask" class="btn btn-sm btn-gradient-primary" aria-label="Assign new task">
+          <i class="bi bi-plus-lg me-1"></i> Assign Task
+        </button>
+      </div>
+    </div>
 
-    <!-- Submit Form -->
-    <div class="card p-4 mb-4 gradient-blue text-white">
-      <h3 class="h5 mb-3">Submit New Leave Request</h3>
-      <form @submit.prevent="submitRequest">
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3">
+      <li class="nav-item">
+        <button class="nav-link" :class="{ active: activeTab==='assignments' }" @click="activeTab='assignments'">
+          Assignments
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" :class="{ active: activeTab==='evaluate' }" @click="activeTab='evaluate'">
+          Evaluate Tasks
+        </button>
+      </li>
+    </ul>
+
+    <!-- Assignments -->
+    <div v-if="activeTab==='assignments'">
+      <!-- Stats -->
+      <div class="task-stats-container mb-4">
+        <div class="row">
+          <div class="col-md-3" v-for="i in 4" :key="i">
+            <div :class="`stat-card gradient-${i}`">
+              <div class="stat-icon">
+                <i :class="[
+                  i===1?'bi bi-list-task':'',
+                  i===2?'bi bi-check-circle':'',
+                  i===3?'bi bi-clock':'',
+                  i===4?'bi bi-graph-up':''
+                ]"></i>
+              </div>
+              <div class="stat-content">
+                <h3 v-if="i===1">{{ tasks.length }}</h3>
+                <h3 v-else-if="i===2">{{ completedCount }}</h3>
+                <h3 v-else-if="i===3">{{ pendingCount }}</h3>
+                <h3 v-else>{{ completionRate }}%</h3>
+                <p v-if="i===1">Total Tasks</p>
+                <p v-else-if="i===2">Completed</p>
+                <p v-else-if="i===3">Pending</p>
+                <p v-else>Completion Rate</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="task-filters mb-3 card-elevated p-3">
         <div class="row g-3">
           <div class="col-md-3">
-            <label class="form-label">Start Date</label>
-            <input
-              type="date"
-              v-model="form.startDate"
-              class="form-control"
-              required
-              :min="today"
-              @change="validateDates"
-            />
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">End Date</label>
-            <input
-              type="date"
-              v-model="form.endDate"
-              class="form-control"
-              required
-              :min="form.startDate || today"
-              @change="validateDates"
-            />
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Type</label>
-            <select v-model="form.type" class="form-select" required>
-              <option v-for="t in leaveTypes" :key="t.value" :value="t.value">
-                {{ t.label }}
-              </option>
+            <label class="form-label">Employee</label>
+            <select v-model="employeeFilter" class="form-select">
+              <option value="">All Employees</option>
+              <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
             </select>
           </div>
           <div class="col-md-3">
-            <label class="form-label">Days</label>
-            <input type="number" class="form-control" :value="calculatedDays" disabled />
+            <label class="form-label">Status</label>
+            <select v-model="statusFilter" class="form-select">
+              <option value="">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Priority</label>
+            <select v-model="priorityFilter" class="form-select">
+              <option value="">All Priorities</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Search</label>
+            <input v-model="searchQuery" type="text" class="form-control" placeholder="Search tasks...">
+          </div>
+        </div>
+      </div>
+
+      <!-- Task List -->
+      <div class="card card-elevated p-3">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle table-modern">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Employee</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Due</th>
+                <th>Completed</th>
+                <th style="width: 160px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(task, index) in filteredTasks" :key="task.id || (task.title + '-' + index)">
+                <td class="fw-semibold">{{ task.title || task.name }}</td>
+                <td>{{ task.assigneeName || getEmployeeName(task.employeeId) || 'Unassigned' }}</td>
+                <td><span class="badge badge-pill" :class="getStatusBadgeClass(task.status)">{{ task.status }}</span></td>
+                <td><span class="badge badge-pill" :class="getPriorityBadgeClass(task.priority)">{{ task.priority }}</span></td>
+                <td>{{ task.dueDate ? formatDate(task.dueDate) : '-' }}</td>
+                <td>{{ task.completedDate ? formatDate(task.completedDate) : '-' }}</td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <button @click="toggleStatus(task)" class="btn btn-outline-primary" title="Toggle status">
+                      <i class="bi" :class="task.status==='Completed' ? 'bi-arrow-counterclockwise' : 'bi-check2-circle'"></i>
+                    </button>
+                    <button @click="editTask(task)" class="btn btn-outline-secondary" title="Edit">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button @click="removeTask(task.id)" class="btn btn-outline-danger" title="Delete">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="filteredTasks.length === 0">
+                <td colspan="7" class="text-center text-muted py-4">No tasks found</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Evaluate -->
+    <div v-else>
+      <div class="card card-elevated p-3">
+        <h3 class="h5 mb-3">Task Evaluation</h3>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Employee</label>
+            <select v-model="evaluation.employeeId" class="form-select">
+              <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Task</label>
+            <select v-model="evaluation.taskId" class="form-select">
+              <option v-for="t in tasks" :key="t.id" :value="t.id">{{ t.title || t.name }}</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Rating (1-5)</label>
+            <input v-model.number="evaluation.rating" type="number" min="1" max="5" class="form-control" />
           </div>
           <div class="col-12">
-            <label class="form-label">Reason</label>
-            <textarea v-model="form.reason" class="form-control" rows="3" required></textarea>
+            <label class="form-label">Feedback</label>
+            <textarea v-model="evaluation.feedback" class="form-control" rows="3" placeholder="Feedback about the task"></textarea>
           </div>
-          <div class="col-12">
-            <button class="btn btn-gradient-primary" type="submit" :disabled="submitting">
-              <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
-              Submit Request
+          <div class="col-12 d-flex justify-content-end">
+            <button @click="submitEvaluation" class="btn btn-gradient-success">
+              <i class="bi bi-check-circle me-2"></i> Submit Evaluation
             </button>
           </div>
         </div>
-      </form>
+      </div>
     </div>
 
-    <!-- Lists -->
-    <div class="row">
-      <div class="col-lg-7">
-        <div class="card p-3">
-          <h3 class="h5">Your Leave History</h3>
-          <div class="table-responsive">
-            <table class="table table-hover align-middle table-modern">
-              <thead>
-                <tr>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th>Type</th>
-                  <th>Reason</th>
-                  <th>Status</th>
-                  <th>Days</th>
-                  <th v-if="canDelete">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(r, idx) in myRequests" :key="r.id || idx">
-                  <td>{{ r.startDate }}</td>
-                  <td>{{ r.endDate }}</td>
-                  <td>{{ r.type }}</td>
-                  <td class="text-truncate" style="max-width: 220px;">{{ r.reason }}</td>
-                  <td><span class="badge badge-pill" :class="statusBadge(r.status)">{{ r.status }}</span></td>
-                  <td>{{ r.days }}</td>
-                  <td v-if="canDelete">
-                    <button class="btn btn-sm btn-gradient-danger" @click="deleteRequest(r)">
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-                <tr v-if="myRequests.length === 0">
-                  <td colspan="7" class="text-center text-muted py-3">No requests</td>
-                </tr>
-              </tbody>
-            </table>
+    <!-- Task Modal -->
+    <div class="modal fade" id="taskModal" tabindex="-1" aria-labelledby="taskModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-gradient-primary text-white">
+            <h2 id="taskModalLabel" class="modal-title h5">{{ editMode ? 'Edit Task' : 'Assign New Task' }}</h2>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Title</label>
+              <input v-model="newTask.title" type="text" class="form-control" placeholder="Task title" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Assign to</label>
+              <select v-model="newTask.employeeId" class="form-select">
+                <option value="">Unassigned</option>
+                <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
+              </select>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Priority</label>
+                <select v-model="newTask.priority" class="form-select">
+                  <option value="Low">Low</option>
+                  <option value="Medium" selected>Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Due date</label>
+                <input v-model="newTask.dueDate" type="date" class="form-control" />
+              </div>
+            </div>
+            <div class="mt-3">
+              <label class="form-label">Description</label>
+              <textarea v-model="newTask.description" rows="3" class="form-control" placeholder="Task description"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-gradient-primary" @click="confirmSaveTask" :disabled="!newTask.title || !newTask.title.trim()">
+              {{ editMode ? 'Update Task' : 'Assign Task' }}
+            </button>
           </div>
         </div>
       </div>
-
-      <div v-if="isApprover" class="col-lg-5">
-        <div class="card p-3">
-          <h3 class="h5">Requests Awaiting Action</h3>
-          <div class="table-responsive">
-            <table class="table align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th>Employee</th>
-                  <th>Period</th>
-                  <th>Type</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(r, idx) in pendingRequests" :key="r.id || idx">
-                  <td>{{ employeeName(r.userId) }}</td>
-                  <td>{{ r.startDate }} → {{ r.endDate }}</td>
-                  <td>{{ r.type }}</td>
-                  <td class="d-flex gap-2">
-                    <button class="btn btn-sm btn-gradient-success" @click="updateStatus(r, 'approved')">Approve</button>
-                    <button class="btn btn-sm btn-gradient-danger" @click="updateStatus(r, 'rejected')">Reject</button>
-                  </td>
-                </tr>
-                <tr v-if="pendingRequests.length === 0">
-                  <td colspan="4" class="text-center text-muted py-3">No pending requests</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
     </div>
+
   </div>
 </template>
 
 <script>
+import { Modal } from 'bootstrap';
+
 export default {
-  name: 'AppLeaveRequestForm',
-  props: {
-    userRole: { type: String, default: null }
-  },
+  name: 'AppTaskEvaluation',
   data() {
     return {
-      leaveTypes: [
-        { value: 'Vacation', label: 'Vacation' },
-        { value: 'Sick', label: 'Sick Leave' },
-        { value: 'Personal', label: 'Personal' },
-        { value: 'Other', label: 'Other' }
-      ],
-      form: { startDate: '', endDate: '', type: 'Vacation', reason: '' },
+      activeTab: 'assignments',
+      tasks: [],
       employees: [],
-      myRequests: [],
-      pendingRequests: [],
-      submitting: false,
-      loading: false
+      loading: false,
+
+      employeeFilter: '',
+      statusFilter: '',
+      priorityFilter: '',
+      searchQuery: '',
+
+      taskModal: null,
+      editMode: false,
+      editingTask: null,
+
+      newTask: {
+        title: '',
+        description: '',
+        priority: 'Medium',
+        dueDate: '',
+        status: 'Pending',
+        employeeId: ''
+      },
+
+      evaluation: {
+        employeeId: null,
+        taskId: null,
+        rating: 3,
+        feedback: ''
+      }
     };
   },
   computed: {
-    today() { return new Date().toISOString().slice(0, 10); },
-    currentUserId() { return this.$store.getters['auth/userData']?.id || null; },
-    role() { return this.userRole || this.$store.getters['auth/userRole'] || 'Employee'; },
-    isApprover() { return ['Admin', 'HR', 'Manager'].includes(this.role); },
-    canDelete() { return true; },
-    calculatedDays() {
-      if (!this.form.startDate || !this.form.endDate) return 0;
-      const s = new Date(this.form.startDate), e = new Date(this.form.endDate);
-      const diff = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
-      return isNaN(diff) || diff < 0 ? 0 : diff;
+    completedCount() { return this.tasks.filter(t => t.status === 'Completed').length; },
+    pendingCount() { return this.tasks.filter(t => t.status === 'Pending').length; },
+    completionRate() {
+      if (!this.tasks.length) return 0;
+      return Math.round((this.completedCount / this.tasks.length) * 100);
+    },
+    filteredTasks() {
+      let list = [...this.tasks];
+      if (this.employeeFilter) list = list.filter(t => String(t.employeeId || '') === String(this.employeeFilter));
+      if (this.statusFilter) list = list.filter(t => t.status === this.statusFilter);
+      if (this.priorityFilter) list = list.filter(t => t.priority === this.priorityFilter);
+      if (this.searchQuery) {
+        const q = this.searchQuery.toLowerCase();
+        list = list.filter(t =>
+          (t.title && t.title.toLowerCase().includes(q)) ||
+          (t.name && t.name.toLowerCase().includes(q)) ||
+          (t.description && t.description.toLowerCase().includes(q))
+        );
+      }
+      const priorityRank = { High: 3, Medium: 2, Low: 1 };
+      return list.sort((a, b) => {
+        const pa = priorityRank[a.priority] || 1, pb = priorityRank[b.priority] || 1;
+        if (pa !== pb) return pb - pa;
+        if (a.dueDate && b.dueDate) return new Date(a.dueDate) - new Date(b.dueDate);
+        const so = { Pending: 1, 'In Progress': 2, Completed: 3 };
+        return (so[a.status] || 1) - (so[b.status] || 1);
+      });
     }
   },
   methods: {
-    extractErrorMessage(err) {
-      const r = err?.response?.data ?? {};
-      if (typeof r === 'string') return r;
-      if (Array.isArray(r?.message)) return r.message.join(', ');
-      if (typeof r?.message === 'string') return r.message;
-      if (r?.errors && typeof r.errors === 'object') {
-        const parts = [];
-        for (const k of Object.keys(r.errors)) {
-          const v = r.errors[k];
-          parts.push(Array.isArray(v) ? `${k}: ${v.join(', ')}` : `${k}: ${String(v)}`);
-        }
-        if (parts.length) return parts.join(' | ');
-      }
-      return err?.message || 'Request failed';
+    notify({ type = 'info', title = '', text = '' }) {
+      if (typeof this.$notify === 'function') this.$notify({ type, title, text });
+      else if (type === 'error') alert(`${title || 'Error'}: ${text}`);
+      else console.log(`[${type}] ${title}: ${text}`);
     },
     normalizeEmployee(e) {
       return {
@@ -189,195 +306,204 @@ export default {
         name: e.name ?? e.full_name ?? e.email ?? `User ${e.id ?? ''}`
       };
     },
-    normalizeRequest(r) {
+    normalizeTask(t) {
+      const id = t.id ?? t.task_id ?? t.taskId ?? null;
+      const title = t.title ?? t.name ?? `Task ${id ?? ''}`;
+      const employeeId =
+        t.employeeId ?? t.user_id ?? t.userId ?? t.assignee_id ?? t.assigned_to ?? '';
+      const assigneeName =
+        t.assigneeName ?? t.user?.name ?? t.assignee?.name ?? t.employee_name ?? null;
+
       return {
-        id: r.id ?? r.request_id ?? r._id ?? null,
-        userId: r.userId ?? r.user_id ?? r.employeeId ?? r.employee_id ?? null,
-        startDate: r.start_date ?? r.startDate ?? r.from ?? '',
-        endDate: r.end_date ?? r.endDate ?? r.to ?? '',
-        type: r.type ?? r.leave_type ?? 'Other',
-        reason: r.reason ?? r.message ?? r.description ?? '',
-        status: r.status ?? r.approval_status ?? 'Pending',
-        days: r.days ?? r.total_days ?? this.diffDays(
-          r.start_date ?? r.startDate ?? r.from,
-          r.end_date   ?? r.endDate   ?? r.to
-        )
+        id,
+        title,
+        name: title,
+        description: t.description ?? t.details ?? '',
+        status: t.status ?? 'Pending',
+        priority: t.priority ?? 'Medium',
+        employeeId,
+        assigneeName,
+        dueDate: t.dueDate ?? t.due_date ?? null,
+        completedDate: t.completedDate ?? t.completed_at ?? null
       };
     },
-    diffDays(s, e) {
-      if (!s || !e) return 0;
-      const ds = new Date(s), de = new Date(e);
-      const d = Math.round((de - ds) / (1000 * 60 * 60 * 24)) + 1;
-      return isNaN(d) || d < 0 ? 0 : d;
-    },
     async loadEmployees() {
-      try {
-        const res = await this.$axios.get('/list-users');
-        const payload = res?.data?.data ?? res?.data?.items ?? res?.data ?? [];
-        this.employees = (Array.isArray(payload) ? payload : [])
-          .map(this.normalizeEmployee)
-          .filter(e => e.id != null);
-      } catch { this.employees = []; }
+      const res = await this.$axios.get('/list-users');
+      const nested = res?.data?.data?.data; // handle {data:{data:[...]}}
+      const payload = nested ?? res?.data?.data ?? res?.data?.items ?? res?.data ?? [];
+      this.employees = (Array.isArray(payload) ? payload : []).map(this.normalizeEmployee).filter(e => e.id != null);
+      if (!this.evaluation.employeeId && this.employees.length) this.evaluation.employeeId = this.employees[0].id;
     },
-    async loadMyRequests() {
+    async loadTasks() {
+      const res = await this.$axios.get('/list-task');
+      const nested = res?.data?.data?.data;
+      const payload = nested ?? res?.data?.data ?? res?.data?.items ?? res?.data ?? [];
+      this.tasks = (Array.isArray(payload) ? payload : []).map(this.normalizeTask);
+      if (!this.evaluation.taskId && this.tasks.length) this.evaluation.taskId = this.tasks[0].id;
+    },
+    async refreshAll() {
+      this.loading = true;
       try {
-        const res = await this.$axios.get('/leave/my');
-        let payload = res?.data?.data ?? res?.data?.items ?? res?.data ?? [];
-        let list = Array.isArray(payload) ? payload : [];
-        if ((!list || list.length === 0) && this.currentUserId) {
-          try {
-            const resAll = await this.$axios.get('/list-leaves');
-            const p2 = resAll?.data?.data ?? resAll?.data ?? [];
-            const all = Array.isArray(p2) ? p2 : [];
-            list = all.filter(x => {
-              const uid = x.userId ?? x.user_id ?? x.employeeId ?? x.employee_id;
-              return String(uid) === String(this.currentUserId);
-            });
-          } catch { /* ignore */ }
-        }
-        this.myRequests = (Array.isArray(list) ? list : []).map(this.normalizeRequest);
+        await Promise.all([this.loadEmployees(), this.loadTasks()]);
+        this.notify({ type: 'success', title: 'Success', text: 'Data refreshed' });
       } catch {
-        this.myRequests = [];
-      }
-    },
-    async loadPending() {
-      if (!this.isApprover) { this.pendingRequests = []; return; }
-      try {
-        const res = await this.$axios.get('/leave/pending');
-        let payload = res?.data?.data ?? res?.data?.items ?? res?.data ?? [];
-        let list = Array.isArray(payload) ? payload : [];
-        if (!list.length) {
-          const res2 = await this.$axios.get('/list-leaves');
-          const p2 = res2?.data?.data ?? res2?.data ?? [];
-          const all = Array.isArray(p2) ? p2 : [];
-          list = all.filter(r => String(r.status ?? r.approval_status ?? '').toLowerCase() === 'pending');
-        }
-        this.pendingRequests = (Array.isArray(list) ? list : []).map(this.normalizeRequest);
-      } catch {
-        try {
-          const res2 = await this.$axios.get('/list-leaves');
-          const p2 = res2?.data?.data ?? res2?.data ?? [];
-          const all = Array.isArray(p2) ? p2 : [];
-          this.pendingRequests = all
-            .map(this.normalizeRequest)
-            .filter(r => String(r.status).toLowerCase() === 'pending');
-        } catch {
-          this.pendingRequests = [];
-        }
-      }
-    },
-    employeeName(id) {
-      const e = this.employees.find(x => String(x.id) === String(id));
-      return e ? e.name : `ID ${id}`;
-    },
-    validateDates() {
-      if (this.form.startDate && this.form.endDate && this.form.endDate < this.form.startDate) {
-        this.form.endDate = this.form.startDate;
-      }
-    },
-    statusBadge(status) {
-      const s = String(status || '').toLowerCase();
-      if (s === 'approved') return 'bg-success';
-      if (s === 'rejected') return 'bg-danger';
-      return 'bg-warning';
-    },
-    toast(text, type = 'success') {
-      if (typeof this.$notify === 'function') this.$notify({ type, title: type === 'error' ? 'Error' : 'Success', text });
-      else { if (type === 'error') alert(text); else console.log(text); }
-    },
-    async submitRequest() {
-      this.submitting = true;
-      try {
-        if (!this.form.startDate || !this.form.endDate) throw new Error('Select dates');
-
-        const start_date = this.form.startDate;
-        const end_date = this.form.endDate;
-        const reason = this.form.reason;
-        const leave_type = this.form.type;
-        const days = this.calculatedDays;
-
-        // Try minimal JSON → JSON with leave_type → multipart (some backends are picky)
-        const variants = [
-          { kind: 'json',  body: { start_date, end_date, reason } },
-          { kind: 'json',  body: { start_date, end_date, reason, leave_type, days } },
-          { kind: 'form',  body: { start_date, end_date, reason, leave_type, days } }
-        ];
-
-        let lastErr = null;
-        for (const v of variants) {
-          try {
-            if (v.kind === 'form') {
-              const fd = new FormData();
-              Object.entries(v.body).forEach(([k, val]) => fd.append(k, val));
-              await this.$axios.post('/leave/request', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-            } else {
-              await this.$axios.post('/leave/request', v.body);
-            }
-            await Promise.all([this.loadMyRequests(), this.loadPending()]);
-            this.form = { startDate: '', endDate: '', type: 'Vacation', reason: '' };
-            this.toast('Leave request submitted');
-            return;
-          } catch (e) {
-            lastErr = e;
-          }
-        }
-
-        const d = lastErr?.response?.data;
-        const msg =
-          (d?.errors && Object.values(d.errors).flat().join(', ')) ||
-          d?.message ||
-          lastErr?.message ||
-          'Request failed';
-        this.toast(msg, 'error');
+        this.notify({ type: 'error', title: 'Error', text: 'Failed to refresh data' });
       } finally {
-        this.submitting = false;
+        this.loading = false;
       }
     },
-    async updateStatus(r, status) {
+    getEmployeeName(id) {
+      const e = this.employees.find(x => String(x.id) === String(id));
+      return e ? e.name : null;
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? '-' : d.toLocaleDateString();
+    },
+    getStatusBadgeClass(status) {
+      const classes = { 'Pending': 'bg-warning', 'In Progress': 'bg-info', 'Completed': 'bg-success' };
+      return `badge-pill ${classes[status] || 'bg-secondary'}`;
+    },
+    getPriorityBadgeClass(priority) {
+      const classes = { 'High': 'bg-danger', 'Medium': 'bg-warning', 'Low': 'bg-success' };
+      return `badge-pill ${classes[priority] || 'bg-secondary'}`;
+    },
+    toggleStatus(task) {
+      task.status = task.status === 'Completed' ? 'In Progress' : 'Completed';
+      task.completedDate = task.status === 'Completed' ? new Date().toISOString() : null;
+      this.notify({ type: 'info', title: 'Note', text: 'Status updated locally (no update endpoint)' });
+    },
+    openNewTask() {
+      this.editMode = false;
+      this.editingTask = null;
+      this.newTask = { title: '', description: '', priority: 'Medium', dueDate: '', status: 'Pending', employeeId: '' };
+      this.taskModal.show();
+    },
+    editTask(task) {
+      this.editMode = true;
+      this.editingTask = task;
+      this.newTask = {
+        title: task.title || task.name || '',
+        description: task.description || '',
+        priority: task.priority || 'Medium',
+        dueDate: task.dueDate ? String(task.dueDate).slice(0, 10) : '',
+        status: task.status || 'Pending',
+        employeeId: task.employeeId || ''
+      };
+      this.taskModal.show();
+    },
+    async confirmSaveTask() {
       try {
-        const body = status === 'rejected'
-          ? { status, reason: 'Rejected by approver' }
-          : { status };
-        await this.$axios.put(`/leave/status/${r.id}`, body);
-        await Promise.all([this.loadPending(), this.loadMyRequests()]);
-        this.toast(`Request ${status}`);
+        if (this.editMode && this.editingTask?.id != null) {
+          // No official update/delete endpoints in your list → local update
+          const idx = this.tasks.findIndex(t => String(t.id) === String(this.editingTask.id));
+          if (idx !== -1) this.$set(this.tasks, idx, this.normalizeTask({ ...this.tasks[idx], ...this.newTask }));
+          this.notify({ type: 'info', title: 'Note', text: 'Task updated locally' });
+        } else {
+          // Create task: send user_id and due_date to match backend conventions
+          await this.$axios.post('/create-task', {
+            title: this.newTask.title,
+            description: this.newTask.description,
+            priority: this.newTask.priority,
+            status: this.newTask.status,
+            user_id: this.newTask.employeeId || null,
+            due_date: this.newTask.dueDate || null
+          });
+          await this.loadTasks();
+          this.notify({ type: 'success', title: 'Success', text: 'Task assigned' });
+        }
+        this.taskModal.hide();
       } catch (e) {
-        this.toast(this.extractErrorMessage(e) || 'Action failed', 'error');
+        const msg = e?.response?.data?.message || e?.message || 'Failed to save task';
+        this.notify({ type: 'error', title: 'Error', text: msg });
       }
     },
-    async deleteRequest(r) {
-      if (!r?.id) return;
-      if (!confirm('Delete this leave request?')) return;
+    removeTask(id) {
+      if (!id) return;
+      if (!confirm('Delete this task?')) return;
+      // No delete endpoint provided → local remove
+      this.tasks = this.tasks.filter(t => String(t.id) !== String(id));
+      this.notify({ type: 'info', title: 'Note', text: 'Task removed locally' });
+    },
+    async submitEvaluation() {
       try {
-        await this.$axios.post(`/delete-leave-request/${r.id}`);
-        await this.loadMyRequests();
-        this.toast('Request deleted');
+        if (!this.evaluation.employeeId || !this.evaluation.taskId) throw new Error('Select employee and task');
+        const task = this.tasks.find(t => String(t.id) === String(this.evaluation.taskId));
+        const note = task ? `Task: ${task.title || task.name}` : '';
+        await this.$axios.post('/create-performance-review', {
+          user_id: this.evaluation.employeeId,
+          rating: Number(this.evaluation.rating),
+          feedback: `${note}\n${this.evaluation.feedback || ''}`.trim()
+        });
+        this.notify({ type: 'success', title: 'Success', text: 'Evaluation submitted' });
       } catch (e) {
-        this.toast(this.extractErrorMessage(e) || 'Delete failed', 'error');
+        this.notify({ type: 'error', title: 'Error', text: e?.response?.data?.message || e?.message || 'Failed to submit evaluation' });
       }
     }
   },
   async mounted() {
-    await Promise.all([this.loadEmployees(), this.loadMyRequests(), this.loadPending()]);
+    this.taskModal = new Modal(document.getElementById('taskModal'));
+    this.loading = true;
+    try {
+      // Load employees first so names resolve
+      await this.loadEmployees();
+      await this.loadTasks();
+    } finally {
+      this.loading = false;
+    }
   }
 };
 </script>
 
 <style scoped>
-.gradient-blue { background: linear-gradient(135deg, #3a7bd5, #00d2ff); color: #fff; }
+.task-evaluator-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  background: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+.evaluator-title { font-size: 1.5rem; font-weight: 600; color: #2c3e50; margin: 0; }
 
-/* Optional polish if you added custom.css */
-.table-modern thead th{
+/* Gradients / Cards */
+.gradient-1 { background: linear-gradient(135deg, #3a7bd5, #00d2ff); color:#fff; }
+.gradient-2 { background: linear-gradient(135deg, #11998e, #38ef7d); color:#fff; }
+.gradient-3 { background: linear-gradient(135deg, #f46b45, #eea849); color:#fff; }
+.gradient-4 { background: linear-gradient(135deg, #ff416c, #ff4b2b); color:#fff; }
+.card-elevated { border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border:0; }
+
+/* Stats */
+.task-stats-container { margin-bottom: 2rem; }
+.stat-card {
+  border-radius: 10px; padding: 1.25rem; display: flex;
+  align-items: center; justify-content: space-between; margin-bottom: 1rem;
+}
+.stat-icon { font-size: 2rem; opacity: 0.9; }
+.stat-content h3 { font-size: 2rem; font-weight: bold; margin: 0; }
+.stat-content p { margin: 0; opacity: 0.9; }
+
+/* Filters */
+.task-filters { background: #f8f9fa; border-radius: 8px; }
+
+/* Table */
+.table-modern thead th {
   background: linear-gradient(135deg, #3a7bd5, #00d2ff);
-  color: #fff;
-  border: 0;
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  color: #fff; border: 0; position: sticky; top: 0; z-index: 1;
 }
 
-.badge-pill{border-radius:999px;padding:.45rem .7rem;font-weight:600}
-.btn-gradient-primary{background:linear-gradient(135deg,#3a7bd5,#00d2ff);color:#fff;border:0;}
-.btn-gradient-success{background:linear-gradient(135deg,#28a745,#38ef7d);color:#fff;border:0;}
-.btn-gradient-danger{background:linear-gradient(135deg,#dc3545,#ff4b2b);color:#fff;border:0;}
+/* Badges */
+.badge-pill { border-radius: 999px; padding: .45rem .7rem; font-weight: 600; }
+.bg-info { background-color: #17a2b8 !important; }
+
+/* Buttons */
+.btn-gradient-primary { background:linear-gradient(135deg,#3a7bd5,#00d2ff);color:#fff;border:0; }
+.btn-gradient-success { background:linear-gradient(135deg,#28a745,#38ef7d);color:#fff;border:0; }
+.btn-gradient-danger  { background:linear-gradient(135deg,#dc3545,#ff4b2b);color:#fff;border:0; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stat-card { margin-bottom: 1rem; }
+}
 </style>

@@ -167,11 +167,8 @@ const router = new Router({
     }
   ],
   scrollBehavior(to, from, savedPosition) {
-    if (savedPosition) {
-      return savedPosition;
-    } else {
-      return { x: 0, y: 0 };
-    }
+    if (savedPosition) return savedPosition;
+    return { x: 0, y: 0 };
   }
 });
 
@@ -180,22 +177,23 @@ router.beforeEach((to, from, next) => {
   
   const isAuthenticated = store.getters["auth/isAuthenticated"];
   const userRole = store.getters["auth/userRole"] || "Guest";
-  
-  // Redirect to login if route requires auth and user is not authenticated
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    return next({
-      path: "/login",
-      query: { redirect: to.fullPath }
-    });
+
+  const requiresAuth = to.matched.some(r => r.meta && r.meta.requiresAuth);
+  const guestOnly = to.matched.some(r => r.meta && r.meta.guestOnly);
+  const allowedRoles = to.matched.reduce((acc, r) => {
+    if (r.meta && r.meta.roles) acc.push(...r.meta.roles);
+    return acc;
+  }, []);
+
+  if (requiresAuth && !isAuthenticated) {
+    return next({ path: "/login", query: { redirect: to.fullPath } });
   }
-  
-  // Redirect away from auth pages if already logged in
-  if (to.meta.guestOnly && isAuthenticated) {
+
+  if (guestOnly && isAuthenticated) {
     return next({ path: "/dashboard" });
   }
-  
-  // Check role permissions
-  if (to.meta.roles && !to.meta.roles.includes(userRole)) {
+
+  if (allowedRoles.length && !allowedRoles.includes(userRole)) {
     return next({ path: "/dashboard" });
   }
   
