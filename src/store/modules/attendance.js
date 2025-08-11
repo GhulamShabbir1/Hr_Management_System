@@ -1,3 +1,4 @@
+// src/store/modules/attendance.js
 import api from '../../services/api';
 
 function toDateOnly(value) {
@@ -6,7 +7,7 @@ function toDateOnly(value) {
     const d = typeof value === 'string' ? new Date(value) : value;
     if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
   } catch (e) {
-    return new Date().toISOString().slice(0, 10);
+    console.error('Invalid date value:', value, e);
   }
   return new Date().toISOString().slice(0, 10);
 }
@@ -54,6 +55,7 @@ export default {
   },
 
   actions: {
+    // GET /attendances
     async fetchAttendance({ commit }) {
       try {
         const res = await api.get('/attendances');
@@ -61,23 +63,40 @@ export default {
         const list = Array.isArray(payload) ? payload : [];
         const normalized = list.map(normalizeRecord);
         commit('SET_ATTENDANCE', normalized);
+        return { success: true, data: normalized };
       } catch (e) {
         commit('SET_ATTENDANCE', []);
+        return {
+          success: false,
+          message: e?.response?.data?.message || e?.message || 'Failed to fetch attendance'
+        };
       }
     },
 
+    // POST /attendance/check-in or /attendance/check-out
+    // Some backends infer user from token; try empty body first, then fallback with userId
     async markAttendance({ commit }, { employeeId, status, location }) {
       try {
-        let res;
         const lower = String(status).toLowerCase();
-        if (lower === 'check-in') {
-          res = await api.post('/attendance/check-in', { userId: employeeId, location });
-        } else if (lower === 'check-out') {
-          res = await api.post('/attendance/check-out', { userId: employeeId });
-        } else {
-          throw new Error('Invalid attendance status');
+        const url = lower === 'check-in' ? '/attendance/check-in' : '/attendance/check-out';
+
+        // Try without body
+        try {
+          const resNoBody = await api.post(url);
+          const rawNoBody = resNoBody?.data?.data ?? resNoBody?.data ?? {};
+          const normalizedNoBody = normalizeRecord({ ...rawNoBody, userId: employeeId });
+          commit('MARK_ATTENDANCE', normalizedNoBody);
+          return { success: true, data: normalizedNoBody };
+        } catch (ignore) {
+          // Fallback with body containing userId
         }
 
+        const body =
+          lower === 'check-in'
+            ? { userId: employeeId, location }
+            : { userId: employeeId };
+
+        const res = await api.post(url, body);
         const raw = res?.data?.data ?? res?.data ?? {};
         const normalized = normalizeRecord({ ...raw, userId: employeeId });
         commit('MARK_ATTENDANCE', normalized);
